@@ -1,21 +1,25 @@
-import React from "react"
-import { Link } from "gatsby"
+import React from "react";
+import Helmet from "react-helmet";
 
-import Layout from "../components/layout"
-import Image from "../components/image"
-import SEO from "../components/seo"
+import { GlobalStyle } from "../globalStyle";
+
+import Header from "../components/header";
+import VoteCard from "../components/votingCard";
 
 const IndexPage = () => (
-  <Layout>
-    <SEO title="Home" />
-    <h1>Hi people</h1>
-    <p>Welcome to your new Gatsby site.</p>
-    <p>Now go build something great.</p>
-    <div style={{ maxWidth: `300px`, marginBottom: `1.45rem` }}>
-      <Image />
-    </div>
-    <Link to="/page-2/">Go to page 2</Link>
-  </Layout>
+  <>
+    <Helmet>
+      <script
+        src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossOrigin="anonymous"
+        />
+      <link href="https://fonts.googleapis.com/css?family=Montserrat:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
+    </Helmet>
+    <GlobalStyle />
+    <Header />
+    <VoteCard />
+  </>
 )
 
 export default IndexPage
