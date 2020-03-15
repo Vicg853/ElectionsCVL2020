@@ -10,18 +10,20 @@ import {
     DefaultButton
 } from "./style";
 
-import {
-    Theme
-} from "../../globalStyle";
+import { 
+    WarningOrSuccessPopUpRef,
+    SuccessOrErrorVotePopUpRef
+} from "../popUps";
 
 import Image0 from "../../images/mainBackground.jpg";
 
-var Candidates = [
-    {Name: "Potato", Id: "122342355"},
-    {Name: "Carrot", Id: "789756"},
-    {Name: "Hello World", Id: "45455445345"},
-    {Name: "LFP", Id: "565665"},
+import API_URLS from "../../../apis_urls";
 
+var Candidates = [
+    {Name: "Lorenzo", Id: "122342355"},
+    {Name: "Miguel", Id: "789756"},
+    {Name: "Victor", Id: "45455445345"},
+    {Name: "Joao", Id: "565665"},
 ];
 
 class VoteCard extends React.Component{
@@ -49,6 +51,7 @@ class VoteCard extends React.Component{
         } = this.state;
 
         var proceed = true;
+        var notProceedVal = 0;
 
         if(CarteirinhaNumberInputEmpty 
         || CarteirinhaNumberInputVal === "" 
@@ -61,6 +64,7 @@ class VoteCard extends React.Component{
         }
         if(Candidate0ValSelected === Candidate1ValSelected) {
             proceed = false;
+            notProceedVal = 1
             this.setState({
                 CandidateValSelectModified: false,
                 ErrorInputs: true,
@@ -73,15 +77,24 @@ class VoteCard extends React.Component{
                 CandidateValSelectModified: true,
                 ErrorInputs: false
             });
-            axios.post("", {
+            SuccessOrErrorVotePopUpRef.current.show(0);
+            axios.post(API_URLS.VOTE_ENDPOINT, {
                 CarteirinhaNumberInputVal,
                 Candidate0ValSelected,
                 Candidate1ValSelected
             }).then((response) => {
-                console.log(response);
-            }).catch(() => {
-    
+                setTimeout(() => {
+                    SuccessOrErrorVotePopUpRef.current.updateMsg(1);
+                }, 3000);
+            }).catch((error) => {
+                setTimeout(() => {
+                    console.log(error);
+                    SuccessOrErrorVotePopUpRef.current.updateMsg(2);
+                }, 3000);
             });
+        }else{
+            if(notProceedVal === 0) WarningOrSuccessPopUpRef.current.show(1, "Vous devez remplir toutes le données necessaires !");
+            if(notProceedVal === 1) WarningOrSuccessPopUpRef.current.show(1, "Vous ne pouvez voter un sule fois sur chaque candidat !");
         }
     }
 
@@ -92,6 +105,9 @@ class VoteCard extends React.Component{
             CandidateValSelectModified,
             ErrorInputs
         } = this.state;
+
+        
+
         return(
             <>
                 <Container>
@@ -108,7 +124,7 @@ class VoteCard extends React.Component{
                             Inserer les info pour y voter: 
                         </title>
                         <div>
-                            <label>Rentrer votre numero de carte:</label>
+                            <label>Rentrer votre numero de carte:</label><br/>
                             <DefaultInput 
                             ErrorInput={CarteirinhaNumberInputEmpty} 
                             onChange={(e) => {
@@ -116,28 +132,30 @@ class VoteCard extends React.Component{
                                 else this.setState({CarteirinhaNumberInputVal: e.target.value, CarteirinhaNumberInputEmpty: false, ErrorInputs: false});
                             }}
                             value={CarteirinhaNumberInputVal} /><br/>
-                            <label>Rentrer un premier candidat de votre choix:</label>
+                            <label>Rentrer un premier candidat de votre choix:</label><br/>
                             <DefaultSelect
                             ErrorInput={!CandidateValSelectModified}
                             onChange={(e) => this.setState({Candidate0ValSelected: e.target.value, CandidateValSelectModified: true, ErrorInputs: false})}>
                                 {Candidates.map((content, index) => (
                                     <option
+                                    key={index}
                                     value={content.Id}>
                                         {content.Name}
                                     </option>
                                 ))}
                             </DefaultSelect><br/>
-                            <label>Rentrer un deuxieme candidat de votre choix:</label>
+                            <label>Rentrer un deuxieme candidat de votre choix:</label><br/>
                             <DefaultSelect
                             ErrorInput={!CandidateValSelectModified}
                             onChange={(e) => this.setState({Candidate1ValSelected: e.target.value, CandidateValSelectModified: true, ErrorInputs: false}) }>
                                 {Candidates.map((content, index) => (
                                     <option
+                                    key={index}
                                     value={content.Id}>
                                         {content.Name}
                                     </option>
                                 ))}
-                            </DefaultSelect>
+                            </DefaultSelect><br/>
                             <DefaultButton
                             ErrorInput={ErrorInputs}
                             onClick={() => this.handleSubmit()}>

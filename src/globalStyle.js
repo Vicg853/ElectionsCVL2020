@@ -5,7 +5,7 @@ export const Theme = {
     backgroundLowOpacity: "rgba(34, 35, 52, 0.4)",
     accent1: "#FFFFFF",
     accent2: "#4c6192",
-    borderRadius: "3px"
+    borderRadius: "5px"
 };
 
 export const GlobalStyle = createGlobalStyle`

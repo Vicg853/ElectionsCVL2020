@@ -5,6 +5,7 @@ import { GlobalStyle } from "../globalStyle";
 
 import Header from "../components/header";
 import VoteCard from "../components/votingCard";
+import PopUpAssembler from "../components/popUps";
 
 const IndexPage = () => (
   <>
@@ -18,6 +19,7 @@ const IndexPage = () => (
     </Helmet>
     <GlobalStyle />
     <Header />
+    <PopUpAssembler />
     <VoteCard />
   </>
 )

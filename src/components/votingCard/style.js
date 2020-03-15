@@ -92,7 +92,7 @@ export const DefaultInput = styled.input`
     font-weight: 400;
     border-radius: ${Theme.borderRadius};
     color: ${Theme.accent1};
-    border: 1px solid ${Theme.accent2};
+    border: 3px solid ${Theme.accent2};
     transition: 0.5s;
     ${props => props.ErrorInput && css`
         border: 3px solid red;
@@ -116,7 +116,7 @@ export const DefaultSelect = styled.select`
     font-weight: 400;
     border-radius: ${Theme.borderRadius};
     color: ${Theme.accent1};
-    border: 1px solid ${Theme.accent2};
+    border: 3px solid ${Theme.accent2};
     transition: 0.5s;
     ${props => props.ErrorInput && css`
         border: 3px solid red;
@@ -140,10 +140,10 @@ export const DefaultButton = styled.button`
     font-weight: 600;
     border-radius: ${Theme.borderRadius};
     color: ${Theme.accent1};
-    border: 1px solid ${Theme.accent2};
+    border: none;
     transition: 0.5s;
     ${props => props.ErrorInput && css`
-        background-color: red;
+        background: red;
     `}
     :hover{
         cursor: pointer;
