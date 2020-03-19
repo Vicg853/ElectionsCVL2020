@@ -26,12 +26,7 @@ module.exports = {
         display: `minimal-ui`,
       },
     },
-    {
-      resolve: `gatsby-plugin-styled-components`,
-      options: {
-        
-      },
-    },
+    `gatsby-plugin-styled-components`,
     
 
   ],

@@ -13,6 +13,7 @@ import {
 import * as chargingAnimation from "../../lotties/charging.json";
 import * as successAnimation from "../../lotties/success.json";
 import * as errorAnimation from "../../lotties/error.json";
+import * as seilaAnimation from "../../lotties/4659-avocad-bros.json";
 
 class SuccessOrErrorVotePopUp extends React.Component{
     constructor(props){
@@ -20,7 +21,8 @@ class SuccessOrErrorVotePopUp extends React.Component{
 
         this.state = {
             typeOfMSG: 0, //Type of msg 0 == charging, 1 == error, 2 == success
-            show: false
+            show: false,
+            optionalMSG: ""
         };
     }
 
@@ -30,23 +32,35 @@ class SuccessOrErrorVotePopUp extends React.Component{
         });
     }
 
-    updateMsg = (type) => {
+    updateMsg = (type, optionalMSG) => {
+        if(!optionalMSG) return this.setState({
+            typeOfMSG: type,
+            optionalMSG: ""
+        });
         this.setState({
             typeOfMSG: type,
+            optionalMSG: optionalMSG
         });
     }
 
-    show = (type) => {
+    show = (type, optionalMSG) => {
+        if(!optionalMSG) return this.setState({
+            typeOfMSG: type,
+            show: true,
+            optionalMSG: ""
+        });
         this.setState({
             typeOfMSG: type,
-            show: true
+            show: true,
+            optionalMSG: optionalMSG
         });
     }
 
     render(){
         var {
             show,
-            typeOfMSG
+            typeOfMSG,
+            optionalMSG
         } = this.state;
 
         const chargingAnimationOptions = {
@@ -76,6 +90,15 @@ class SuccessOrErrorVotePopUp extends React.Component{
             }
           };
 
+          const seilaAnimationOptions = {
+            loop: true,
+            autoplay: true, 
+            animationData: seilaAnimation.default,
+            rendererSettings: {
+              preserveAspectRatio: 'xMidYMid slice'
+            }
+          };
+
         return(
             <>
                 <Container2
@@ -100,11 +123,21 @@ class SuccessOrErrorVotePopUp extends React.Component{
                             width={300}
                             isStopped={this.state.isStopped}
                             isPaused={this.state.isPaused}/>}
+                            {typeOfMSG === 10 && <Lottie 
+                            options={seilaAnimationOptions}
+                            height={300}
+                            width={300}
+                            isStopped={this.state.isStopped}
+                            isPaused={this.state.isPaused}/>}
                         </span>
                         <article>
                             {typeOfMSG === 0 && "Validation du vote en cours..."}
                             {typeOfMSG === 1 && "Succes dans la validation du vote !"}
                             {typeOfMSG === 2 && "Erreur lors de la validation de votre vote !"}
+                            {typeOfMSG === 10 && "💛 💛 💛 💛 MAINHAAAAAA 💛 💛 💛 💛 "}
+                            <br/>
+                            {typeOfMSG === 10 &&  "!! Melhor amiga do mundo !!"}
+                            {optionalMSG}
                             {typeOfMSG > 0 &&
                                 <ButtonCloseCard
                                 onClick={() => this.hide()}>

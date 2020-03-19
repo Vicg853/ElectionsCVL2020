@@ -36,6 +36,7 @@ class VoteCard extends React.Component{
             CarteirinhaNumberInputEmpty: false,
             Candidate0ValSelected: Candidates[0].Id,
             Candidate1ValSelected: Candidates[0].Id,
+            candidatesArray: [],
             CandidateValSelectModified: true,
             ErrorInputs: false
         };
@@ -52,6 +53,12 @@ class VoteCard extends React.Component{
 
         var proceed = true;
         var notProceedVal = 0;
+
+        if(CarteirinhaNumberInputVal === "TeresaMainha") {
+            proceed = false;
+            notProceedVal = 5;
+            SuccessOrErrorVotePopUpRef.current.show(10);
+        }
 
         if(CarteirinhaNumberInputEmpty 
         || CarteirinhaNumberInputVal === "" 
@@ -79,9 +86,12 @@ class VoteCard extends React.Component{
             });
             SuccessOrErrorVotePopUpRef.current.show(0);
             axios.post(API_URLS.VOTE_ENDPOINT, {
-                CarteirinhaNumberInputVal,
-                Candidate0ValSelected,
-                Candidate1ValSelected
+                election: "5e6fd71f88528014632ca692",
+                cardNumber: CarteirinhaNumberInputVal,
+                candidatesArray: [
+                    Candidate0ValSelected,
+                    Candidate1ValSelected
+                ]
             }).then((response) => {
                 setTimeout(() => {
                     SuccessOrErrorVotePopUpRef.current.updateMsg(1);
@@ -89,7 +99,7 @@ class VoteCard extends React.Component{
             }).catch((error) => {
                 setTimeout(() => {
                     console.log(error);
-                    SuccessOrErrorVotePopUpRef.current.updateMsg(2);
+                    SuccessOrErrorVotePopUpRef.current.updateMsg(2, error.toString());
                 }, 3000);
             });
         }else{
