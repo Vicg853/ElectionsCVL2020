@@ -86,7 +86,7 @@ export const DefaultInput = styled.input`
     width: 350px;
     padding: 15px;
     margin-top: 5px;
-    margin-bottom: 60px;
+    margin-bottom: 30px;
     background: ${Theme.accent2};
     font-size: 17px;
     font-weight: 400;
@@ -106,11 +106,15 @@ export const DefaultInput = styled.input`
     }
 `;
 
+export const SelectScrollContainer = styled.div`
+    width: auto;
+`;
+
 export const DefaultSelect = styled.select`
     width: 350px;
     padding: 15px;
     margin-top: 5px;
-    margin-bottom: 60px;
+    margin-bottom: 15px;
     background: ${Theme.accent2};
     font-size: 17px;
     font-weight: 400;
@@ -133,7 +137,7 @@ export const DefaultSelect = styled.select`
 export const DefaultButton = styled.button`
     width: 350px;
     padding: 15px;
-    margin-top: 5px;
+    margin-top: 20px;
     margin-bottom: 60px;
     background: ${Theme.accent2};
     font-size: 17px;

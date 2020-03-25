@@ -32,7 +32,7 @@ class Header extends React.Component{
             <>
                 <Container ScrolledAfterLimit={ScrolledAfterLimit}>
                     <h1>
-                        Elections CVL 2020
+                        Elections Lycée Pasteur
                     </h1>
                     <h2>
                         Developed by Victor Gomez Te S

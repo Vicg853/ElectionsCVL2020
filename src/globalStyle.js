@@ -2,7 +2,7 @@ import { createGlobalStyle } from 'styled-components';
 
 export const Theme = {
     background: "#222334",
-    backgroundLowOpacity: "rgba(34, 35, 52, 0.4)",
+    backgroundLowOpacity: "rgba(34, 35, 52, 0.35)",
     accent1: "#FFFFFF",
     accent2: "#4c6192",
     borderRadius: "5px"

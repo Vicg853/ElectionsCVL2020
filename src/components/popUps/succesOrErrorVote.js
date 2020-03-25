@@ -132,8 +132,8 @@ class SuccessOrErrorVotePopUp extends React.Component{
                         </span>
                         <article>
                             {typeOfMSG === 0 && "Validation du vote en cours..."}
-                            {typeOfMSG === 1 && "Succes dans la validation du vote !"}
-                            {typeOfMSG === 2 && "Erreur lors de la validation de votre vote !"}
+                            {typeOfMSG === 1 && "Succes l'ors de l'operation realisé !"}
+                            {typeOfMSG === 2 && "Oups ! Une erreur c'est déroulé"}
                             {typeOfMSG === 10 && "💛 💛 💛 💛 MAINHAAAAAA 💛 💛 💛 💛 "}
                             <br/>
                             {typeOfMSG === 10 &&  "!! Melhor amiga do mundo !!"}

@@ -1,5 +1,8 @@
 import React from "react";
 import axios from "axios";
+import { connect } from "react-redux";
+import { globalHistory } from "@reach/router";
+import { navigate } from "gatsby";
 
 import {
     Container,
@@ -17,15 +20,6 @@ import {
 
 import Image0 from "../../images/mainBackground.jpg";
 
-import API_URLS from "../../../apis_urls";
-
-var Candidates = [
-    {Name: "Lorenzo", Id: "122342355"},
-    {Name: "Miguel", Id: "789756"},
-    {Name: "Victor", Id: "45455445345"},
-    {Name: "Joao", Id: "565665"},
-];
-
 class VoteCard extends React.Component{
     constructor(props) {
         super(props);
@@ -34,20 +28,63 @@ class VoteCard extends React.Component{
             EmptyInput: false,
             CarteirinhaNumberInputVal: "",
             CarteirinhaNumberInputEmpty: false,
-            Candidate0ValSelected: Candidates[0].Id,
-            Candidate1ValSelected: Candidates[0].Id,
-            candidatesArray: [],
+            PasswordNumberInputVal: "",
+            PasswordNumberInputEmpty: false,
+            candidatesArraySelected: [],
             CandidateValSelectModified: true,
-            ErrorInputs: false
+            ErrorInputs: false,
+            candidatesAxiosRequestResults: []
         };
+    }
+
+    componentWillMount(){
+        setTimeout(() => {
+            if(globalHistory.location.pathname === "/vote"){
+                if(!this.props.ActiveElectionID
+                    || this.props.ActiveElectionID === "" 
+                    || this.props.ActiveElectionID === null) navigate("/");
+                else axios.post(process.env.HEAVY_WORK_API_URL + "/candidates", {
+                    electionID: this.props.ActiveElectionID
+                })
+                .then((res) => {
+                    if(res.data.results.length != 0){
+                        this.setState({candidatesAxiosRequestResults: res.data.results});
+                    }else{
+                        SuccessOrErrorVotePopUpRef.current.show(2, "Oups ! Une erreur c'est déroulé voulez recharger la page s'il vous plait!");
+                        navigate("/");
+                    }
+                }).catch((err) => {
+                    SuccessOrErrorVotePopUpRef.current.show(2, "Oups ! Une erreur c'est déroulé voulez recharger la page s'il vous plait!");
+                    navigate("/");
+                });
+            }
+        }, 2); 
+    }
+    handleCandidateChange(){
+        var inputs = document.getElementsByClassName("CandidateInputElement");
+        var inputsArray = Array.prototype.slice.call(inputs);
+        var mapResults = [];
+        if(inputs.length !== 0) {
+            console.log(inputsArray);
+            inputsArray.forEach(element => {
+                var value = element.value;
+                mapResults.push(value);
+            });
+            this.setState({
+                CandidateValSelectModified: true, 
+                ErrorInputs: false,
+                candidatesArraySelected: mapResults,
+            });
+        }
     }
 
     handleSubmit(){
         var { 
             CarteirinhaNumberInputVal,
-            Candidate0ValSelected,
-            Candidate1ValSelected,
+            PasswordNumberInputVal,
+            candidatesArraySelected,
             CarteirinhaNumberInputEmpty,
+            PasswordNumberInputEmpty,
             CandidateValSelectModified
         } = this.state;
 
@@ -69,7 +106,16 @@ class VoteCard extends React.Component{
                 ErrorInputs: true
             });
         }
-        if(Candidate0ValSelected === Candidate1ValSelected) {
+        if(PasswordNumberInputEmpty 
+            || PasswordNumberInputVal === "" 
+            || PasswordNumberInputVal === null) {
+            proceed = false;
+            this.setState({
+                PasswordNumberInputEmpty: true,
+                ErrorInputs: true
+            });
+        }
+        if(candidatesArraySelected.length != this.props.ActiveElectionNumberOfVotes) {
             proceed = false;
             notProceedVal = 1
             this.setState({
@@ -78,6 +124,18 @@ class VoteCard extends React.Component{
             });
         }
 
+        var valuesSoFar = Object.create(null);
+        for (var i = 0; i < candidatesArraySelected.length; ++i) {
+            var value = candidatesArraySelected[i];
+            if (value in valuesSoFar) {
+                this.setState({
+                    CandidateValSelectModified: false,
+                    ErrorInputs: true,
+                });
+                return proceed = false;
+            }
+            valuesSoFar[value] = true;
+        }
         if(proceed){
             this.setState({
                 CarteirinhaNumberInputEmpty: false,
@@ -85,20 +143,17 @@ class VoteCard extends React.Component{
                 ErrorInputs: false
             });
             SuccessOrErrorVotePopUpRef.current.show(0);
-            axios.post(API_URLS.VOTE_ENDPOINT, {
-                election: "5e6fd71f88528014632ca692",
-                cardNumber: CarteirinhaNumberInputVal,
-                candidatesArray: [
-                    Candidate0ValSelected,
-                    Candidate1ValSelected
-                ]
+            axios.post(process.env.HEAVY_WORK_API_URL + "/vote", {
+                electionID: this.props.ActiveElectionID,
+                schoolCardId: CarteirinhaNumberInputVal,
+                password: PasswordNumberInputVal,
+                candidatesArray: candidatesArraySelected
             }).then((response) => {
                 setTimeout(() => {
                     SuccessOrErrorVotePopUpRef.current.updateMsg(1);
                 }, 3000);
             }).catch((error) => {
                 setTimeout(() => {
-                    console.log(error);
                     SuccessOrErrorVotePopUpRef.current.updateMsg(2, error.toString());
                 }, 3000);
             });
@@ -112,11 +167,33 @@ class VoteCard extends React.Component{
         var { 
             CarteirinhaNumberInputVal,
             CarteirinhaNumberInputEmpty,
+            PasswordNumberInputVal,
+            PasswordNumberInputEmpty,
             CandidateValSelectModified,
-            ErrorInputs
+            ErrorInputs,
+            candidatesAxiosRequestResults
         } = this.state;
 
-        
+        const items = [];
+
+        for (var i = 0; i < this.props.ActiveElectionNumberOfVotes; i++){
+            items.push(
+                <>
+                <DefaultSelect
+                ErrorInput={!CandidateValSelectModified}
+                onChange={(e) => this.handleCandidateChange()}
+                className="CandidateInputElement">
+                    {candidatesAxiosRequestResults.map((content, index) => (
+                        <option
+                        key={index}
+                        value={content.id}>
+                            {content.name}
+                        </option>
+                    ))}
+                </DefaultSelect><br/>
+                </>
+            );
+        }
 
         return(
             <>
@@ -142,30 +219,17 @@ class VoteCard extends React.Component{
                                 else this.setState({CarteirinhaNumberInputVal: e.target.value, CarteirinhaNumberInputEmpty: false, ErrorInputs: false});
                             }}
                             value={CarteirinhaNumberInputVal} /><br/>
-                            <label>Rentrer un premier candidat de votre choix:</label><br/>
-                            <DefaultSelect
-                            ErrorInput={!CandidateValSelectModified}
-                            onChange={(e) => this.setState({Candidate0ValSelected: e.target.value, CandidateValSelectModified: true, ErrorInputs: false})}>
-                                {Candidates.map((content, index) => (
-                                    <option
-                                    key={index}
-                                    value={content.Id}>
-                                        {content.Name}
-                                    </option>
-                                ))}
-                            </DefaultSelect><br/>
-                            <label>Rentrer un deuxieme candidat de votre choix:</label><br/>
-                            <DefaultSelect
-                            ErrorInput={!CandidateValSelectModified}
-                            onChange={(e) => this.setState({Candidate1ValSelected: e.target.value, CandidateValSelectModified: true, ErrorInputs: false}) }>
-                                {Candidates.map((content, index) => (
-                                    <option
-                                    key={index}
-                                    value={content.Id}>
-                                        {content.Name}
-                                    </option>
-                                ))}
-                            </DefaultSelect><br/>
+                            <label>Rentrer votre mot de passe reseau:</label><br/>
+                            <DefaultInput 
+                            ErrorInput={PasswordNumberInputEmpty} 
+                            onChange={(e) => {
+                                if(e.target.value === "" || null) this.setState({PasswordNumberInputVal: e.target.value, PasswordNumberInputEmpty: true, ErrorInputs: false});
+                                else this.setState({PasswordNumberInputVal: e.target.value, PasswordNumberInputEmpty: false, ErrorInputs: false});
+                            }}
+                            value={PasswordNumberInputVal} /><br/>
+                            <label>Rentrer les candidats de votre choix:</label><br/>
+                            
+                            {items}                                                                
                             <DefaultButton
                             ErrorInput={ErrorInputs}
                             onClick={() => this.handleSubmit()}>
@@ -179,5 +243,20 @@ class VoteCard extends React.Component{
     }
 }
 
-export default VoteCard;
+const mapStateToProps = state => ({
+    ActiveElectionID: state.pagesReducer.Active_Election_ID,
+    ActiveElectionName: state.pagesReducer.Active_Election_Name,
+    ActiveElectionEndDate: state.pagesReducer.Active_Election_EndDate,
+    ActiveElectionIMG_URL: state.pagesReducer.Active_Election_IMG_URL,
+    ActiveElectionNumberOfVotes: state.pagesReducer.Active_Election_Number_Of_Votes,
+});
+
+const mapDispatchToProps = dispatch => ({
+
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(VoteCard);
 
