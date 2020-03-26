@@ -27,6 +27,11 @@ const electionsSchema = new mongoose.Schema({
         type: Array,
         required: false,
         default: {}
+    },
+    backgroundUrl: {
+        type: String,
+        required: false,
+        default: ""
     }
 });
 

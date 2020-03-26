@@ -26,6 +26,11 @@ const candidateSchema = new mongoose.Schema({
         type: Boolean,
         required: false,
         default: false,
+    },
+    imgUrl: {
+        type: String,
+        required: false,
+        default: ""
     }
 });
 

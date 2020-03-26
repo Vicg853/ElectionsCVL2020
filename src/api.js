@@ -29,6 +29,6 @@ mongoose.connect(
 
 api.use(require('./router'));
 
-api.listen(process.env.API_LISTEN_PORT, 
-    console.log("Listening on http://localhost:" + process.env.API_LISTEN_PORT)
+api.listen(process.env.API_LISTEN_PORT, process.env.HOST_NAME, 
+    console.log("Listening on http://" + process.env.HOST_NAME + ":" + process.env.API_LISTEN_PORT)
 );
