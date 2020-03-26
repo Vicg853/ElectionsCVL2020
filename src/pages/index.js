@@ -16,8 +16,6 @@ import {
 import Image0 from "../images/home_page_background.jpg";
 import Image1 from "../images/mainBackground.jpg";
 
-var electionObject = [];
-
 class Home extends React.Component {
   constructor(props){
     super(props);
