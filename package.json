@@ -4,8 +4,8 @@
   "description": "API for main voting system for Lycée Pasteur Unité Vergueiro",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon src/api.js",
-    "start": "node src/apis.js"
+    "test": "NODE_ENV=development nodemon src/api.js ",
+    "start": "NODE_ENV=production node src/api.js"
   },
   "keywords": [],
   "author": "Victor Rosa Gomez",
@@ -14,6 +14,7 @@
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
+    "dotenv-flow": "^3.1.0",
     "express": "^4.17.1",
     "express-brute": "^1.0.1",
     "express-brute-mongoose": "^1.1.0",

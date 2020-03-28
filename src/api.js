@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv-flow').config();
 const express = require('express');
 const body_parser = require('body-parser');
 const mongoose = require('mongoose');

@@ -1,4 +1,5 @@
 const electionModel = require('../models/electionsModel');
+const adminAuthController = require('../controllers/adminAuthController');
 
 function checkDate(electionID, callback){
     electionModel.findById(electionID, (err, result) => {
@@ -47,32 +48,77 @@ function setSchoolCardVotedElection(electionID, schoolCardID, callback){
     //callback(false, true)
 }
 
-function getElections(all, callback){
+function getElections(all, token, callback){
     electionModel.find({}, (err, result) => {
-        if(err) return callback(1);
+        if(err) return callback(2);
         var mapElectionsResults = [];
-        result.forEach((content, index) => {
-            var electionInfo = {
-                id: content._id,
-                name: content.electionName,
-                numberOfCandidatesToVote: content.numberOfCandidatesToVote,
-                endDate: content.resultsDate,
-                backgroundUrl: content.backgroundUrl
-            }
-            if(all) mapElectionsResults.push(electionInfo);
-            else {
-                if(new Date(content.resultsDate) > new Date) mapElectionsResults.push(electionInfo);
-            }
-        });
-        return callback(false, mapElectionsResults);
+        var err = false;
+        if(all){
+            if(!token) return callback(3);
+            adminAuthController.checkAdminAuth(token, (err, success) => {
+                if(err) return callback(1);
+                if(!success) return callback(2);
+                result.forEach((content, index) => {
+                    var electionInfo = {
+                        id: content._id,
+                        name: content.electionName,
+                        endDate: content.resultsDate,
+                        startDate: content.startDate,
+                        backgroundUrl: content.backgroundUrl
+                    }
+                    mapElectionsResults.push(electionInfo);
+                });  
+                return callback(false, mapElectionsResults);
+            });
+        } else {
+            result.forEach((content, index) => {
+                var electionInfo = {
+                    id: content._id,
+                    name: content.electionName,
+                    endDate: content.resultsDate,
+                    startDate: content.startDate,
+                    backgroundUrl: content.backgroundUrl
+                }
+                if(new Date(content.resultsDate) > new Date 
+                    && new Date(content.startDate) < new Date) mapElectionsResults.push(electionInfo);
+            });  
+            return callback(false, mapElectionsResults);
+        }
     });
     //callback(1) -> 500 error
     //callback(false, electionsArray) -> success, keep on with callback
+}
+
+function getElectionInfo(electionID, token, callback){
+    electionModel.findOne({
+        _id: electionID,
+    }, (err, res) => {
+        if(err) return callback(3);
+        if(!res) return callback(1);
+        var electionInfo = {
+            id: res._id,
+            name: res.electionName,
+            endDate: res.resultsDate,
+            startDate: res.startDate,
+            backgroundUrl: res.backgroundUrl
+        }
+        if(new Date(res.resultsDate) > new Date 
+            && new Date(res.startDate) < new Date) return callback(false, electionInfo);
+        else{
+            if(!token) return callback(4);
+            adminAuthController.checkAdminAuth(token, (err, success) => {
+                if(err) return callback(2);
+                if(!success) return callback(3);
+                return callback(false, electionInfo);
+            });
+        }   
+    });
 }
 
 module.exports = { 
     checkDate, 
     checkIfAlreadyVoted, 
     setSchoolCardVotedElection,
-    getElections
+    getElections,
+    getElectionInfo
 };
