@@ -1,3 +1,5 @@
+const path = require(`path`)
+
 module.exports = {
   siteMetadata: {
     title: `Election CVL Lycée Pasteur Unité Vergueiro`,
@@ -46,6 +48,16 @@ module.exports = {
         windowKey: '__PRELOADED_STATE__',
       },
     },
+    {
+      resolve: `gatsby-plugin-nprogress`,
+      options: {
+        // Setting a color is optional.
+        color: `white`,
+        // Disable the loading spinner.
+        showSpinner: false,
+      },
+    },
+
 
   ],
 }

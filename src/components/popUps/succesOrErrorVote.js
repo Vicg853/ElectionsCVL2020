@@ -131,7 +131,7 @@ class SuccessOrErrorVotePopUp extends React.Component{
                             isPaused={this.state.isPaused}/>}
                         </span>
                         <article>
-                            {typeOfMSG === 0 && "Validation du vote en cours..."}
+                            {typeOfMSG === 0 && "Chargement du vote en cours..."}
                             {typeOfMSG === 1 && "Succes l'ors de l'operation realisé !"}
                             {typeOfMSG === 2 && "Oups ! Une erreur c'est déroulé"}
                             {typeOfMSG === 10 && "💛 💛 💛 💛 MAINHAAAAAA 💛 💛 💛 💛 "}

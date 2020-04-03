@@ -1,6 +1,7 @@
 import React from 'react';
 import Helmet from "react-helmet";
 import { Provider } from "react-redux";
+import "nprogress/nprogress.css";
 
 import createStore from "./store";
 
@@ -20,6 +21,9 @@ const Layout = ({element}) => {
             crossOrigin="anonymous"
             />
           <link href="https://fonts.googleapis.com/css?family=Montserrat:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
+          <title>
+            ELECTIONS LFP
+          </title>
         </Helmet>
         <Provider store={store}>
           <GlobalStyle />

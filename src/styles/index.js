@@ -1,5 +1,4 @@
-import styled from "styled-components";
-import { Link } from "gatsby";
+import styled, {css} from "styled-components";
 import { Theme } from "../globalStyle";
 
 export const PresentationContainer = styled.div`
@@ -10,6 +9,8 @@ export const PresentationContainer = styled.div`
     background-size: cover;
     background-position: center center;
     padding-top: 220px;
+    position: relative;
+    overflow: hidden;
     h1{
         margin-left: 110px;
         margin-right: 110px;
@@ -24,6 +25,8 @@ export const PresentationContainer = styled.div`
             background-color: ${Theme.accent1};
             margin-top: 20px;
         }
+        z-index: 1;
+        position: relative;
     }
     h2{
         font-size: 18px;
@@ -33,6 +36,41 @@ export const PresentationContainer = styled.div`
         margin-right: 110px;
         max-width: 400px;
         margin-top: 60px;
+        z-index: 1;
+        position: relative;
+    }
+    ::before{
+        display: block;
+        position: absolute;
+        content: "";
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        background-color: ${Theme.background};
+        opacity: .3;
+    }
+    @media screen and (max-width: 720px){
+        h1, h2{
+            margin-left: 60px;
+            margin-right: 60px;
+        }
+    }
+    @media screen and (max-width: 400px){
+        h1, h2{
+            margin-left: 25px;
+            margin-right: 25px;
+        }
+    }
+    @media screen and (max-width: 350px) and (max-height: 630px){
+        h1{
+            font-size: 23px;
+        }
+        h2{
+            font-size: 16px;
+        }
     }
 `;
 
@@ -78,15 +116,13 @@ export const Container = styled.div`
     }
 `;
 
-export const ElectionCard = styled(Link)`
+export const ElectionCard = styled.div`
     width: 400px;
-    height: 200px;
+    height: 246px;
     display: block;
+    position: relative;
     margin: 1.15%;
     border-radius: ${Theme.borderRadius};
-    background-size: cover;
-    background-position: center center;
-    background-image: url('${props => props.backgroundURL}');
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -94,6 +130,24 @@ export const ElectionCard = styled(Link)`
     position: relative;
     overflow: hidden;
     margin-top: 30px;
+    div{
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        background-size: cover;
+        background-position: center center;
+        background-color: ${Theme.backgroundLowOpacity};
+        background-image: url('${props => props.backgroundURL}');
+        margin: 0px;
+        padding: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        ${props => props.ShimmerEffectActive && css`
+            filter: blur(7px);
+        `}
+    }
     h1{
         font-size: 21px;
         font-weight: 600;
@@ -102,14 +156,30 @@ export const ElectionCard = styled(Link)`
         ::after{
             display: none;
         }
+        @media screen and (max-width: 716px) {
+            padding-left: unset !important;
+            padding-right: unset !important;
+        }
+        ${props => props.ShimmerEffectActive && css`
+            border-radius: ${Theme.borderRadius};
+            margin-bottom: 3px;
+            width: 150px;
+            filter: blur(0.2px);
+        `}
     }
     h2{
         z-index: 2;
         font-size: 16px;
         font-weight: 400;
         color: ${Theme.accent1};
+        margin-bottom: 40px;
+        ${props => props.ShimmerEffectActive && css`
+            border-radius: ${Theme.borderRadius};
+            width: 150px;
+            filter: blur(0.2px);
+        `}
     }
-    ::after{
+    ::before{
         z-index: 1;
         display: block;
         content: "";
@@ -119,8 +189,33 @@ export const ElectionCard = styled(Link)`
         left: 0;
         bottom: 0;
         width: 100%;
-        height: 100%;
+        height: 200px;
         background-color: ${Theme.backgroundLowOpacity};
+    }
+    ::after{
+        ${props => props.Results ? css`
+            content: "${props => props.ShimmerEffectActive ? "Chargement en cours" : "Resultats ❯" }";
+        ` : css`
+            content: "${props => props.ShimmerEffectActive ? "Chargement en cours" : "Voter ❯" }";
+        `}
+        display: flex;
+        height: 46px;
+        background-color: ${Theme.accent1};
+        color: ${Theme.accent2};
+        position: absolute;
+        width: 100%;
+        top: 200px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        font-size: 17px;
+        font-weight: 700;
+        justify-content: center;
+        justify-items: center;
+        align-content: center;
+        align-items: center;
+        text-align: center;
+        z-index: 2;
     }
     transition: 0.3s;
     :hover{
@@ -132,5 +227,8 @@ export const ElectionCard = styled(Link)`
     @media screen and (max-width: 716px) {
         margin: 0px;
         margin-top: 40px;
+    }
+    @media screen and (max-width: 500px){
+        width: 94vw;
     }
 `;

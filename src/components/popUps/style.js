@@ -45,6 +45,11 @@ export const Container2 = styled.div`
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        padding: 1rem;
+        @media screen and (max-width: 500px){
+            width: 100%;
+            height: 100%;
+        }
     }
     span{
         width: 300px;

@@ -4,6 +4,19 @@ import {
     Theme
 } from "../../globalStyle";
 
+const animateArrowInfinite = keyframes`
+    0%{
+        transform: translateY(0px);
+    }
+    50%{
+        transform: translateX(7px);
+    }
+    100%{
+        transform: translateY(0px);
+    }
+`;
+
+
 export const Container = styled.div`
     width: 100vw;
     min-height: 500px;
@@ -12,6 +25,32 @@ export const Container = styled.div`
     border-radius: ${Theme.borderRadius};
     display: inline-flex;
     align-items: center;
+    @media screen and (max-width: 870px){
+        position: relative;
+    }
+    span{
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: ${Theme.accent1};
+        font-size: 20px;
+        font-weight: 500;
+        position: absolute;
+        right: -100px;
+        border-radius: ${Theme.borderRadius};
+        transform: rotate(90deg);
+        background-color: ${Theme.background};
+        padding: 0.2rem;
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+        ::after{
+            content: "→";
+            display: block;
+            animation: ${animateArrowInfinite} infinite 1s;
+            margin-left: 5px;
+        }
+    }
 `;
 
 export const SideImageContainer = styled.div`
@@ -40,16 +79,25 @@ export const SideImageContainer = styled.div`
         text-decoration-color: ${Theme.accent2};
         text-decoration-line: underline;
     }
+    @media screen and (max-width: 870px){
+        width: 100vw;
+        filter: blur(4px);
+        article{
+            display: none;
+        }
+    }
 `;
 
 export const VoteFrm = styled.div`
-    width: 45%;
+    width: calc(52.5% - 12px);
     height: 100vh;
-    padding-top: 170px;
-    padding-bottom: 170px;
+    padding-top: 140px;
+    padding-bottom: 20px;
     margin-left: 7.5%;
     display: flex;
     flex-direction: column;
+    overflow: scroll;
+    overflow-x: hidden;
     label{
         width: 350px;
         color: ${Theme.accent1};
@@ -64,6 +112,49 @@ export const VoteFrm = styled.div`
         width: fit-content;
         height: fit-content;
         margin-bottom: 40px;
+    }
+    @media screen and (max-width: 870px){
+        position: absolute;
+        width: 500px;
+        height: 80vh;
+        max-height: 650px;
+        margin-left: calc((100% - 500px) / 2);
+        margin-right: calc((100% - 500px) / 2);
+        background-color: ${Theme.background};
+        margin-bottom: 20px;
+        overflow: scroll;
+        overflow-x: hidden;
+        padding: 1rem;
+        padding-top: 20px;
+        border-radius: ${Theme.borderRadius};
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+    }
+    @media screen and (max-width: 560px){
+        width: 100vw;
+        height: 100vh;
+        margin: 0px;
+        padding-top: 140px;
+        max-height: unset;
+        background-color: transparent;
+        input, select, button{
+            background-color: ${Theme.accent1};
+            color: ${Theme.background};
+            border: solid ${Theme.accent1} 3px;
+            ::placeholder{
+                color: ${Theme.background};
+            }
+        }
+    }
+    @media screen and (max-width: 400px){
+        label{
+            width: 100vw;
+            position: relative;
+            left: 5vw;
+            right: 5vw;
+            font-size: 1.1rem;
+        }
     }
 `;
 
@@ -87,7 +178,7 @@ export const DefaultInput = styled.input`
     padding: 15px;
     margin-top: 5px;
     margin-bottom: 30px;
-    background: ${Theme.accent2};
+    background: ${Theme.background};
     font-size: 17px;
     font-weight: 400;
     border-radius: ${Theme.borderRadius};
@@ -95,7 +186,7 @@ export const DefaultInput = styled.input`
     border: 3px solid ${Theme.accent2};
     transition: 0.5s;
     ${props => props.ErrorInput && css`
-        border: 3px solid red;
+        border: 3px solid red !important;
         animation: 0.55s ease-in ${ErrorInput};
     `}
     ::placeholder{
@@ -104,18 +195,25 @@ export const DefaultInput = styled.input`
         color: ${Theme.accent1};
         opacity: 0.7;
     }
+    @media screen and (max-width: 400px){
+        width: 90vw;
+        margin-left: 5vw;
+        margin-right: 5vw;
+    }
 `;
 
 export const SelectScrollContainer = styled.div`
     width: auto;
+    height: 100px;
+    overflow: scroll;
+    overflow-x: hidden;
 `;
 
 export const DefaultSelect = styled.select`
     width: 350px;
-    padding: 15px;
     margin-top: 5px;
     margin-bottom: 15px;
-    background: ${Theme.accent2};
+    background: ${Theme.background};
     font-size: 17px;
     font-weight: 400;
     border-radius: ${Theme.borderRadius};
@@ -123,7 +221,7 @@ export const DefaultSelect = styled.select`
     border: 3px solid ${Theme.accent2};
     transition: 0.5s;
     ${props => props.ErrorInput && css`
-        border: 3px solid red;
+        border: 3px solid red !important;
         animation: 0.55s ease-in ${ErrorInput};
     `}
     ::placeholder{
@@ -131,6 +229,11 @@ export const DefaultSelect = styled.select`
         font-weight: 400;
         color: ${Theme.accent1};
         opacity: 0.7;
+    }
+    @media screen and (max-width: 400px){
+        width: 90vw;
+        margin-left: 5vw;
+        margin-right: 5vw;
     }
 `;
 
@@ -139,17 +242,24 @@ export const DefaultButton = styled.button`
     padding: 15px;
     margin-top: 20px;
     margin-bottom: 60px;
-    background: ${Theme.accent2};
+    box-sizing: border-box;
+    background: ${Theme.background};
     font-size: 17px;
     font-weight: 600;
+    border: solid ${Theme.accent2} 3px;
     border-radius: ${Theme.borderRadius};
     color: ${Theme.accent1};
-    border: none;
     transition: 0.5s;
     ${props => props.ErrorInput && css`
-        background: red;
+        border: solid red 3px !important;
+        background: red !important;
     `}
     :hover{
         cursor: pointer;
+    }
+    @media screen and (max-width: 400px){
+        width: 90vw;
+        margin-left: 5vw;
+        margin-right: 5vw;
     }
 `;

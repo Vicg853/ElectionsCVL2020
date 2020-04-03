@@ -33,8 +33,10 @@ class WarningOrSuccessPopUp extends React.Component{
             MSG: msg,
             show: true
         });
-        window.clearTimeout(Timer);
-        Timer = window.setTimeout(() => {this.hide()}, 4000);
+        if(typeof window !== 'undefined' && window){
+            window.clearTimeout(Timer);
+            Timer = window.setTimeout(() => {this.hide()}, 4000);
+        }
         return true;
     }
 
