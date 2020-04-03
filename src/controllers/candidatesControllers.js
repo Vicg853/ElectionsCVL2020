@@ -14,7 +14,7 @@ function addVote(electionID, candidateArray, callback){
             }
             valuesSoFar[value] = true;
         }
-        candidateModel.updateMany({ _id: { $in: candidateArray } }, 
+        candidateModel.updateMany({ _id: { $in: candidateArray }, approvedCandidate: true }, 
         { $inc: { numberOfVotes: 1 } }, 
         {multi: true}, (err, result) => {
             if(err) return callback(3);
@@ -31,7 +31,8 @@ function addVote(electionID, candidateArray, callback){
 
 function getVotes(electionID, callback){
     candidateModel.find({
-        electionParticipating: electionID
+        electionParticipating: electionID,
+        approvedCandidate: true,
     }, (err, result) => {
         if(err) return callback(2);
         if(!result) return callback(1);
@@ -53,7 +54,8 @@ function getVotes(electionID, callback){
 
 function getCandidates(electionID, callback){
     candidateModel.find({
-        electionParticipating: electionID
+        electionParticipating: electionID,
+        approvedCandidate: true,
     }, (err, result) => {
         if(err) return callback(2);
         if(!result) return callback(1);
@@ -61,9 +63,11 @@ function getCandidates(electionID, callback){
         result.forEach((content, index) => {
             var candidateInfoArray = {
                 name: content.name,
+                age: content.age,
                 id: content._id,
                 text: content.message,
-                profileImage: content.imgUrl
+                profileImage: content.imgUrl,
+                classNumber: content.classNumber
             }
             mapCandidatesData.push(candidateInfoArray);
         });

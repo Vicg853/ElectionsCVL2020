@@ -1,10 +1,14 @@
 const router = require('express').Router();
-const rootRoute = "/api"
+const rootRoute = "/api/heavy";
 
 const schoolCardController = require('./controllers/schoolCardController');
 const electionController = require('./controllers/electionControllers');
 const candidatesController = require('./controllers/candidatesControllers');
 const adminAuthController = require('./controllers/adminAuthController');
+
+router.get(rootRoute + "/", (req, res) => {
+    return res.status(200).json({msg:"Hello world from Licée Pasteur's Elections Heavy Work API", code: "200", results: "Have a good day !"});
+})
 
 router.post(rootRoute + '/vote', (req, res) => {
     if(!req.body.schoolCardId || !req.body.password
@@ -47,8 +51,7 @@ router.post(rootRoute + '/vote', (req, res) => {
 });
 
 router.post(rootRoute + '/results', (req, res) => {
-    if(!req.body.electionID) return res.status(422).json({msg: "Missing input!", code: "422"});
-    electionController.checkDate(req.body.electionID, (err, success) => {
+    if(req.body.electionID) electionController.checkDate(req.body.electionID, (err, success) => {
         if(err) return res.status(500).json({msg: 'Internal server error !', code: '500'});
         if(success < 3) {
             adminAuthController.checkAdminAuth(req.body.authToken, (err, success1) => {
@@ -67,6 +70,11 @@ router.post(rootRoute + '/results', (req, res) => {
             return res.status(200).json({msg: "Success getting result!", code: "200", results: success2});
         });
     });
+    else electionController.getConcludedElections((err, success) => {
+        if(err) return res.status(500).json({msg: "Internal server error!", code: "500"});
+        if(success.length === 0) return res.status(200).json({msg: "No results!", code: "200", results: []});
+        return res.status(200).json({msg: "Success while retrieving results!", code: "200", results: success});
+    })
 });
 
 router.post(rootRoute + '/candidates', (req, res) => {
@@ -80,7 +88,7 @@ router.post(rootRoute + '/candidates', (req, res) => {
     });
 });
 
-router.get(rootRoute + '/elections', (req, res) => {
+router.post(rootRoute + '/elections', (req, res) => {
     if(!req.body.electionID) electionController.getElections(req.body.all, req.body.token, (err, success) => {
         if(err){
             if(err === 1) return res.status(403).json({msg: "Unauthorized!", code: "403"});
@@ -96,7 +104,7 @@ router.get(rootRoute + '/elections', (req, res) => {
             if(err === 3) return res.status(500).json({msg: "Internal server error!", code: "500"});
             if(err === 4) return res.status(422).json({msg: "Invalid input!", code: "422"});
         }
-        else return res.status(200).json({msg: "Success while retrieving results!", code: "200", results: success});
+        else return res.status(200).json({msg: "Success while retrieving election!", code: "200", results: success});
     });
 });
 

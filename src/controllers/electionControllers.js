@@ -100,19 +100,33 @@ function getElectionInfo(electionID, token, callback){
             name: res.electionName,
             endDate: res.resultsDate,
             startDate: res.startDate,
-            backgroundUrl: res.backgroundUrl
+            backgroundUrl: res.backgroundUrl,
+            numberOfCandidatesToVote: res.numberOfCandidatesToVote
         }
-        if(new Date(res.resultsDate) > new Date 
-            && new Date(res.startDate) < new Date) return callback(false, electionInfo);
-        else{
-            if(!token) return callback(4);
-            adminAuthController.checkAdminAuth(token, (err, success) => {
-                if(err) return callback(2);
-                if(!success) return callback(3);
-                return callback(false, electionInfo);
-            });
-        }   
+        return callback(false, electionInfo);
+    
     });
+}
+
+function getConcludedElections(callback){
+    electionModel.find((err, res) => {
+        if(err) return callback(true);
+        if(!res) return callback(false, []);
+
+        var mapConcludedElections = [];
+        res.forEach((content, index) => {
+            var electionInfo = {
+                id: content._id,
+                name: content.electionName,
+                endDate: content.resultsDate,
+                startDate: content.startDate,
+                backgroundUrl: content.backgroundUrl
+            }
+            console.log(content.resultsDate)
+            if(new Date(content.resultsDate) < new Date)mapConcludedElections.push(electionInfo);
+        });
+        return callback(false, mapConcludedElections);
+    })
 }
 
 module.exports = { 
@@ -120,5 +134,6 @@ module.exports = {
     checkIfAlreadyVoted, 
     setSchoolCardVotedElection,
     getElections,
-    getElectionInfo
+    getElectionInfo,
+    getConcludedElections
 };

@@ -5,8 +5,12 @@ const candidateSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    age: {
+        type: Number,
+        required: true,
+    },
     electionParticipating: {
-        type: Array,
+        type: String,
         required: true,
     },
     editorPassword: {
@@ -31,7 +35,12 @@ const candidateSchema = new mongoose.Schema({
         type: String,
         required: false,
         default: ""
-    }
+    },
+    classNumber: {
+        type: String,
+        required: true
+    },
+
 });
 
 module.exports = mongoose.model("Candidate", candidateSchema);
