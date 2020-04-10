@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    role: {
+    scopes: {
         type: Array,
         required: false,
     },

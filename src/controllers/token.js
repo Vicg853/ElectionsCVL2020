@@ -3,7 +3,10 @@ const fs = require("fs"),
       path = require('path'),
       filePath = path.join(__dirname, "../../");
 
+const {UserModel, CandidateModel} = require("../models/users");
 const tokenBlackListModel = require("../models/tokenList");
+
+const utilsControllers = require("./utils");
 
 var privateKEY  = fs.readFileSync(filePath + 'private.pem', 'utf8');
 var publicKEY  = fs.readFileSync(filePath + 'public.pem', 'utf8');
@@ -20,7 +23,7 @@ function generateToken(data, callback){
     });
 }
 
-function checkToken(token, callback){
+function checkToken(token, checkInfoOrN, callback){
     jwt.verify(token, publicKEY, { algorithms:  ["RS512"] },(err, decoded) => {
         if(err) return callback(2);
         if(!decoded) return callback(2); 
@@ -30,7 +33,14 @@ function checkToken(token, callback){
         }, (err, res) => {
             if(err) return callback(1);
             if(res) return callback(2);
-            return callback(false, decoded);
+            if(!res && checkInfoOrN) UserModel.findById(decoded.userId, (err, res) => {
+                if(err) return callback(1);
+                if(!res) return callback(2);
+                if(decoded.fullName !== res.fullName) return callback(2);
+                if(!utilsControllers.arraysMatch(decoded.scopes, res.scopes)) return callback(2);
+                return callback(false, decoded);
+            });
+            if(!res && !checkInfoOrN) return callback(false, decoded);
         });
     });
     //callback(1) --> 500

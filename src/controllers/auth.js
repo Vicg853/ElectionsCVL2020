@@ -28,13 +28,16 @@ function checkLoginCredentials(username, password, callback) {
 function checkScopes(userScopes, authorizedScopes, callback) {
     var userScopesArray = [];
     var authorizedScopesArray = [];
-    if(userScopes !== typeof Array) userScopesArray.push(userScopes);
+    if(!Array.isArray(userScopes)) userScopesArray.push(userScopes);
     else userScopesArray = userScopes;
-    if (authorizedScopes !== typeof Array) authorizedScopesArray.push(authorizedScopes);
+    if (!Array.isArray(authorizedScopes)) authorizedScopesArray.push(authorizedScopes);
     else authorizedScopesArray = authorizedScopes;
-    callback(userScopesArray.some(element => {
-        if(authorizedScopesArray.indexOf(element) >= 0) return true;
+    if(callback) callback(userScopesArray.some(element => {
+        if(authorizedScopesArray.indexOf(element) >= 0) return element;
     }));
+    else return userScopesArray.some(element => {
+        if(authorizedScopesArray.indexOf(element) >= 0) return true;
+    });
 }
 
 function checkAdminPassword(adminId, passwordToVerify, callback){
@@ -43,7 +46,7 @@ function checkAdminPassword(adminId, passwordToVerify, callback){
         if(!res) return callback(2)
         if(!res._id) return callback(2);
         if(res.blocked) return callback(3);
-        bcrypt.compare(password, res.password, (err, match) => {
+        bcrypt.compare(passwordToVerify, res.password, (err, match) => {
             if (err) return callback(1);
             if (!match) return callback(4);
             return callback(false, true);

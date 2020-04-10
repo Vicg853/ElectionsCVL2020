@@ -5,9 +5,9 @@ const mongoose = require("mongoose");
 
 //Error sent when there are to many login attempts or etc...
 const failCallback = function (req, res, nextValidRequestDate) {
-    return res.status(401).json({
-       error: 1,
-       message: "You tried to login to many times try again in " +moment(nextValidRequestDate).fromNow()
+    return res.status(403).json({
+       code: "403",
+       msg: "You tried to many times with the same credentials try again in " +moment(nextValidRequestDate).fromNow()
     });
 }
     //Brute force store 
