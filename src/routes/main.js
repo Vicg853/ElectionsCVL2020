@@ -3,15 +3,15 @@ const router = require("express").Router();
 const {
     globalBruteforce,
     userBruteforce
-} = require("./security/bruteforce");
+} = require("../security/bruteforce");
 
-const authControllers = require("./controllers/auth");
-const tokenControllers = require("./controllers/token");
-const usersControllers = require("./controllers/users");
-const utilsControllers = require("./controllers/utils");
+const authControllers = require("../controllers/auth");
+const tokenControllers = require("../controllers/token");
+const usersControllers = require("../controllers/users");
+const utilsControllers = require("../controllers/utils");
 
 const mainHost = "http://localhost:8000"
-const rootRoute = "/api/auth";
+const rootRoute = "/api/auth/admin";
 const adminPageRoute = "/";
 const loginRoute = "/";
 
@@ -41,28 +41,7 @@ router.post(rootRoute + "/login",
     });
 });
 
-router.get("/logout", (req, res) => {
-    if(!req.session.token) return res.status(200).redirect(mainHost + loginRoute);
-    tokenControllers.checkToken(req.session.token, false, (err, result) => {
-        if(err){
-            if(err === 1) return res.status(500).json({msg: "Error while trying to logout, try again!", code: "500"});
-            if(err === 2) req.session.destroy((err) => {
-                if(err) return res.status(500).json({msg: "Error while trying to logout, try again!", code: "500"});
-                return res.status(200).redirect(mainHost + loginRoute);
-            });
-        }
-        if(result) tokenControllers.invalidateToken(req.session.token, result, (err, success) => {
-            if(err) return res.status(500).json({msg: "Error while trying to logout, tyr again!", code: "500"});
-            if(!result) return res.status(500).json({msg: "Error while trying to logout, tyr again!", code: "500"});
-            req.session.destroy((err) => {
-                if(err) return res.status(500).json({msg: "Error while trying to logout, try again!", code: "500"});
-                return res.status(200).redirect(mainHost + loginRoute);
-            });
-        });
-    });
-});
-
-router.post(rootRoute + "/addAdmin", 
+router.post(rootRoute + "/add", 
     globalBruteforce.prevent,
     userBruteforce.getMiddleware({ 
         //Bruteforce check to prevent bruteforce atacks
@@ -116,7 +95,7 @@ router.post(rootRoute + "/addAdmin",
     });
 });
 
-router.put(rootRoute + "/editAdmin", 
+router.put(rootRoute + "/edit", 
     globalBruteforce.prevent,
     userBruteforce.getMiddleware({ 
         //Bruteforce middleware to prevent user from bruteforcing
@@ -206,7 +185,7 @@ router.put(rootRoute + "/editAdmin",
                         if(err) return res.status(500).json({msg: "Internal server error!", code: "500"}); 
                         if(editedUserName) {
                             if(tokenPayload.userId === req.body.userId) return res.status(200).redirect(rootRoute + "/logout?changedInfo=true");
-                            else return res.status(200).json({msg: "Succes while modifying " + editedUserName + "'s info!", code: "200"});
+                            else return res.status(200).json({msg: "Success while modifying " + editedUserName + "'s info!", code: "200"});
                         }
                     });
                 }
@@ -215,7 +194,7 @@ router.put(rootRoute + "/editAdmin",
     });
 });
 
-router.delete(rootRoute + "/editAdmin",
+router.delete(rootRoute + "/delete",
     globalBruteforce.prevent, 
     userBruteforce.getMiddleware({ 
         //Bruteforce middleware to prevent user from bruteforcing
@@ -286,14 +265,14 @@ router.delete(rootRoute + "/editAdmin",
                 usersControllers.deleteUser(req.body.userId, (err, result) => {
                     if(err) return res.status(500).json({msg: "Internal server error!", code: "500"});
                     if(result && tokenPayload.userId === req.body.userId) return res.status(200).redirect(mainHost + "/logout?deleteUser=true")
-                    if(result && tokenPayload.userId !== req.body.userId) return res.status(200).json({msg: "Success deleting user!", code: "200"});
+                    if(result && tokenPayload.userId !== req.body.userId) return res.status(200).json({msg: "Success while deleting " + result + "!", code: "200"});
                 });
             }
         });
     });
 });
 
-router.put(rootRoute + "/editPassword",
+router.put(rootRoute + "/edit/password",
     globalBruteforce.prevent, 
     userBruteforce.getMiddleware({ 
         //Bruteforce middleware to prevent user from bruteforcing

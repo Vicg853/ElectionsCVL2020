@@ -39,7 +39,9 @@ api.use(session({
     }
 }));
 
-api.use(require("./routes"));
+api.use(require("./routes/main"));
+api.use(require("./routes/common"));
+api.use(require("./routes/candidate"));
 
 api.listen(process.env.API_LISTEN_PORT, process.env.API_HOST_NAME, () => {
     console.log("Running on: http://" + process.env.API_HOST_NAME + ":" + process.env.API_LISTEN_PORT);

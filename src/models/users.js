@@ -42,16 +42,16 @@ const candidateSchema = UserSchema.extend({
         type: Number,
         required: true,
     },
-    electionParticipating: {
-        type: String,
+    electionsParticipating: {
+        type: Array,
         required: true,
     },
     message: {
         type: String,
         required: true,
     },
-    numberOfVotes: {
-        type: Number,
+    numberOfVotesByElection: {
+        type: Array,
         required: false,
         default: 0,
     },
@@ -64,15 +64,6 @@ const candidateSchema = UserSchema.extend({
         type: String,
         required: true
     },
-    blocked: {
-        type: Boolean,
-        require: false,
-        default: true,
-    },
-    role: {
-        type: Array,
-        
-    }
 });
 
 const UserModel = mongoose.model("User", UserSchema);

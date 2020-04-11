@@ -48,7 +48,6 @@ function changeUserInfo(userId, infoArray, callback){
     if (infoArray.fullName) infoArrayToUpdate.fullName = infoArray.fullName;
     if (infoArray.mailAddress) infoArrayToUpdate.mailAddress = infoArray.mailAddress;
     if (infoArray.scopes || infoArray.scopes.length !== 0) infoArrayToUpdate.scopes = infoArray.scopes;
-    if (infoArray.blocked !== null) infoArrayToUpdate.blocked = infoArray.blocked;
     
     infoArrayToUpdate = { $set: infoArrayToUpdate }
 
