@@ -82,9 +82,34 @@ function deleteCandidate(userId, callback) {
     //callback(true) --> 500
 }
 
+function blockOrUnblockCandidate(userId, value, callback) {
+    //Checks if user really exists
+    CandidateModel.findById(userId, (err, found) => {
+        //Returns 500 in case of internal server error
+        if(err) return callback(1);
+        //Returns 404 user not found
+        if(!found) return callback(2);
+        //In case that usr is found modify the blocked status
+        //to chosen value by user
+        if(found) CandidateModel.findByIdAndUpdate(userId, {
+            $set: { blocked: value }
+        }, (err, modified) => {
+            //Returns 500 in case of internal server error
+            if(err) return callback(1);
+            if(!modified) return callback(1);
+            //Returns new blocked value and err === false
+            if(modified && !value) return callback(false, true, "unblocked");
+            if(modified && value) return callback(false, true, "blocked");
+        });
+    });
+    //callback(1) --> 500
+    //callback(2) --> user not found
+}
+
 module.exports = {
     createCandidate,
-    modifyCandidatePassword,
+    changeCandidateInfo,
     deleteCandidate,
-    modifyCandidatePassword
+    modifyCandidatePassword,
+    blockOrUnblockCandidate
 };

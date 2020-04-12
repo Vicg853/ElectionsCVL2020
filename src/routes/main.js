@@ -1,3 +1,4 @@
+//Defining main variables that make 
 const router = require("express").Router();
 
 const {
@@ -23,19 +24,31 @@ router.post(rootRoute + "/login",
             next(req.body.username);
         }
     }), (req, res) => {
+    //Check if there is username and password input
     if(!req.body.username || !req.body.password) return res.status(422).json({
         msg: "Invalid input, you must insert a username and password!", code: "422"});
+    //Check if there is already a token or session to prevent
+    //two logins in one browser
     if(req.session.token) return res.status(200).redirect(mainHost + adminPageRoute);
+    //Check login credentials (username and password)
     authControllers.checkLoginCredentials(req.body.username, req.body.password, (err, success) => {
         if(err) {
+            //Returns 500 error in case of internal server error
+            //or 401 if user is not found or password is wrong
+            //or if user has been blocked
             if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
             if(err === 2) return res.status(401).json({msg: "User not found or incorrect password!", code: "401"});
             if(err === 3) return res.status(401).json({msg: "User has been blocked!", code: "401"});
         }
+        //In case of success generates token
         if(success) tokenControllers.generateToken(success, (err, success2) => {
-            if(err || !success2) return res.status(500).json({msg: "Internal server error! (token)", code: "500"});
+            //Reset brute as all credentials are correct
             req.brute.reset();
+            //Returns 500 in case of internal server error 
+            if(err || !success2) return res.status(500).json({msg: "Internal server error! (token)", code: "500"});
+            //Saves token in session cookie
             req.session.token = success2;
+            //Returns 200 status and success message and session cookies
             return res.status(200).json({msg: "Success on login procedure!", code: "200"});
         });
     });
@@ -49,48 +62,99 @@ router.post(rootRoute + "/add",
             next(req.session.token);
         }
     }), (req, res) => {
-    if(!req.body.newUsername || 
-       !req.body.newFullName || 
-       !req.body.newEmail || 
-       !req.body.newRole || 
-       !req.body.newPassword || 
-       !req.body.newPasswordConfirm || 
-       !req.body.adminPassword) return res.status(422).json({msg: "Invalid input, check your inputs!", code: "422"});
+    //Check if input is correct 
+    //or return 422 for invalid input
+    if(!req.body.newUserUsername || 
+       !req.body.newUserFullName || 
+       !req.body.newUserEmail || 
+       !req.body.newUserScopes || 
+       !req.body.newUserPassword || 
+       !req.body.newUserPasswordConfirm || 
+       !req.body.checkPassword) return res.status(422).json({msg: "Invalid input, check your inputs!", code: "422"});
+    //Check if user is logged in
     if(!req.session.token) return res.status(401).redirect(mainHost + loginRoute);
-    tokenControllers.checkToken(req.session.token, true, (err, result) => {
+    //Gets token payload to check scopes
+    tokenControllers.checkToken(req.session.token, false, (err, preTokenCheck) => {
         if(err) {
+            //Returns 500 in case of internal server error
+            //or redirects to logout with 401 if token is invalid
             if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
-            if(err === 2) return res.status(401).redirect(mainHost + "/logout");
+            if(err === 2) return res.redirect(401, mainHost + "/logout");
         }
-        if(!result) return res.status(500).json({msg: "Internal server error!", code: "500"});
-        var authorizedRoles = ["users:add_a_edit","role:master"];
-        authControllers.checkScopes(result.scopes, authorizedRoles, (result1) => {
-            if(!result1) return res.status(403).json({msg: "You are not allowed to add users!", code: "403"});
-            if(result1) authControllers.checkAdminPassword(result.userId, req.body.adminPassword, (err, result3) => {
+        //Check if user is a candidate
+        if(preTokenCheck) authControllers.checkScopes(preTokenCheck, ["role:candidate"], (isCandidate) => {
+            //In case user is a candidate returns 403 error
+            if(isCandidate) return res.status(403).json({msg: "You must be an admin to create admins!", code: "403"});
+            //Now really checks if user token is really correct
+            if(!isCandidate) tokenControllers.checkToken(req.session.token, true, (err, tokenPayload) => {
                 if(err) {
+                    //Returns 500 in case of internal server error
+                    //or redirects to logout with 401 if token is invalid
                     if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
-                    if(err === 2 || err === 3) return res.status(401).redirect(mainHost + "/logout");
-                    if(err === 4) return res.status(403).json({msg: "Wrong admin password!", code: "403"});
+                    if(err === 2) return res.redirect(401, mainHost + "/logout");
                 }
-                if(result3) {
-                    req.brute.reset();
-                    usersControllers.createAdmin(
-                    req.body.newUsername,
-                    req.body.newPassword, 
-                    req.body.newPasswordConfirm,
-                    req.body.newFullName,
-                    req.body.newRole,
-                    req.body.newEmail,
-                    (err, success) => {
+                //Defining variables authorized to add users
+                var authorizedScopes = ["role:master", "users:add_a_edit"];
+                //Check if admin has scopes to add users
+                if(tokenPayload) authControllers.checkScopes(tokenPayload.scopes, authorizedScopes, (hasNecessaryScopes) => {
+                    //Return 403 if user has not got necessary scopes
+                    if(!hasNecessaryScopes) return res.status(403).json({msg: "You don't have necessary scope to add users!", code: "403"});
+                    //If has proceed checking admin password
+                    if(hasNecessaryScopes) authControllers.checkAdminPassword(tokenPayload.userId, req.body.checkPassword, (err, passwordCorrect) => {
                         if(err) {
-                            if(err === 1) return res.status(422).json({msg: "The tow new passwords must be equal!", code: "422"});
-                            if(err === 2) return res.status(500).json({msg: "Internal server error!", code: "500"});
-                            if(err === 3) return res.status(409).json({msg: "Username or email are already in use!", code: "409"});
+                            //Return errors for wrong password, blocked
+                            //or inexistent user and internal server error
+                            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                            if(err === 2 || err === 3) return res.status(401).redirect(mainHost + "/logout");
+                            if(err === 4) return res.status(401).json({msg: "Wrong password!", code: "401"});
                         }
-                        if(success) return res.status(200).json({msg: "User " + success + " created successfully", code: "200"});
+                        //If password is correct check if role being added is master and if admin adding has master
+                        if(passwordCorrect) {
+                            //In case password is correct check if admin
+                            //is trying to add a user with master role, and that this
+                            //admin has master role (as you can only define a master role
+                            //user being a master admin)
+                            if(authControllers.checkScopes(req.body.newUserScopes, ["role:master"])) authControllers.checkScopes(tokenPayload.scopes, ["role:master"], (hasMasterRole) => {
+                                //Return 403 in case user hasn't got master role
+                                if(!hasMasterRole) return res.status(403).json({msg: "You're not authorized to add a master role user not having master role access!", code: "403"});
+                                //Proceed in case he has
+                                if(hasMasterRole) proceed();
+                            });
+                            //Else just proceed
+                            else proceed();
+
+                            function proceed(){
+                                //Reset breuteforce as all has been verified
+                                req.brute.reset();
+                                //Defining info array to create admin
+                                var infoArray = {
+                                    username: req.body.newUserUsername,
+                                    fullName: req.body.newUserFullName,
+                                    password: req.body.newUserPassword,
+                                    newUserPasswordConfirm: req.body.newUserPasswordConfirm,
+                                    mailAddress: req.body.newUserEmail,
+                                    scopes: req.body.newUserScopes,
+                                }
+                                //Call function to encrypt password and save user to db
+                                usersControllers.createAdmin(infoArray, (err, success) => {
+                                    if(err) {
+                                        //Returns 422 in case passwords are not equal
+                                        //or 500 in case of internal server error
+                                        //or 409 in case user already exists
+                                        if(err === 1) return res.status(422).json({msg: "Password and confirm password input must be equal equal!", code: "422"});
+                                        if(err === 2) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                        if(err === 3) return res.status(409).json({msg: "Username is already in use!", code: "409"});
+                                    }
+                                    //Returns 200 and success message with new user full name
+                                    if(success) return res.status(200).json({msg: "User " + success + " created successfully!", code: "200"});
+                                });
+                            }   
+                        }
+    
                     });
-                }
-            }); 
+                });
+                
+            });
         });
     });
 });
@@ -176,7 +240,7 @@ router.put(rootRoute + "/edit",
                     if(!authControllers.checkScopes(tokenPayload.scopes, ["role:master"]) &&
                         authControllers.checkScopes(req.body.infoArray.scopes, ["role:master"])) 
                         return res.status(403).json({
-                            msg: "You are not allowed to do this action, you must be a higher role admin, 2!", code: "403"});
+                            msg: "You are not allowed to do this action, you must be a higher role admin!", code: "403"});
 
                     //Reset bruteforce counter, as user has passed all verification
                     req.brute.reset();
@@ -282,54 +346,138 @@ router.put(rootRoute + "/edit/password",
             next(req.session.token);
         }
     }), (req, res) => {
-        //Check if input is correct
-        if(!req.body.oldPassword ||
-           !req.body.newPassword ||
-           !req.body.newPasswordConfirm) 
-            return res.status(422).json({msg: "Invalid input!", code: "422"});
-        //Check if user is logged in 
-        if(!req.session.token) return res.status(200).redirect(mainHost + "/login");
-        //Check if two new passwords inputs are equal so the user
-        //is really inputted correctly
-        if(req.body.newPassword !== req.body.newPasswordConfirm) return res.status(422).json({msg: "New passwords must be equal!", code: "422"});
-        //check if user token is correct and valid
-        tokenControllers.checkToken(req.session.token, true, (err, tokenPayload) => {
-            if(err){
-                //Return 500 error in case of internal server error
-                //or 401 and redirects to logout route
-                //in case of invalid token
-                if(err === 1) return res.status(500).json({msg: "Internal server erro!", code: "500"});
-                if(err === 2) return res.status(401).redirect(mainHost + "/logout");
+    //Check if input is correct
+    if(!req.body.oldPassword ||
+       !req.body.newPassword ||
+       !req.body.newPasswordConfirm) 
+        return res.status(422).json({msg: "Invalid input!", code: "422"});
+    //Check if user is logged in 
+    if(!req.session.token) return res.status(200).redirect(mainHost + "/login");
+    //Check if two new passwords inputs are equal so the user
+    //is really inputted correctly
+    if(req.body.newPassword !== req.body.newPasswordConfirm) return res.status(422).json({msg: "New passwords must be equal!", code: "422"});
+    //check if user token is correct and valid
+    tokenControllers.checkToken(req.session.token, true, (err, tokenPayload) => {
+        if(err){
+            //Return 500 error in case of internal server error
+            //or 401 and redirects to logout route
+            //in case of invalid token
+            if(err === 1) return res.status(500).json({msg: "Internal server erro!", code: "500"});
+            if(err === 2) return res.status(401).redirect(mainHost + "/logout");
+        }
+        //If token is valid, check if verification password is
+        //correct 
+        if(tokenPayload) authControllers.checkAdminPassword(tokenPayload.userId, req.body.oldPassword, (err, valid) => {
+            if(err) {
+                //Return 500 in case of internal server error 
+                //or 401 and redirects to logout page in case of inexistent user
+                //or 403 in case of wrong password 
+                if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                if(err === 2 || err === 3) return res.status(401).redirect(mainHost + "/logout")
+                if(err === 4) return res.status(403).json({msg: "Old password is incorrect!", code: "403"});
             }
-            //If token is valid, check if verification password is
-            //correct 
-            if(tokenPayload) authControllers.checkAdminPassword(tokenPayload.userId, req.body.oldPassword, (err, valid) => {
+            //In case password is correct modify users information 
+            if(valid) {
+                //Reset brute as user passed through all verifications
+                req.brute.reset();
+                //Call function to modify user information
+                usersControllers.modifyUserPassword(tokenPayload.userId, req.body.newPassword, (err, success) => {
+                    if(err) {
+                        //Return 500 in case of internal server error
+                        //or 401 in case user isn't found
+                        if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                        if(err === 2) return res.status(401).json({msg: "User not found!", code: "401"});
+                    }
+                    //If success returns 200 and redirects to logout page
+                    if(success) return res.status(200).redirect(mainHost + "/logout?changedInfo=true");
+                });
+            }
+        });
+    }); 
+});
+
+router.post(rootRoute + "/block",
+    globalBruteforce.prevent, 
+    userBruteforce.getMiddleware({ 
+        //Bruteforce middleware to prevent user from bruteforcing
+        //the password used to verify users authenticity to
+        //modify data. 
+        key: (req, res, next) => {
+            next(req.session.token);
+        }
+    }), (req, res) => {
+    //Check if user input is correct else return 422
+    if(!req.body.userId ||
+       !req.body.passwordCheck ||
+       req.body.blockedValue === null) return res.status(422).json({msg: "Invalid input!", code: "422"});
+    //Check if token exists else redirect to login page
+    if(!req.session.token) return res.redirect(401, mainHost + "/login");
+    //Check if token is low valid and get scopes
+    tokenControllers.checkToken(req.session.token, false, (err, preCheckToken) => {
+        if(err) {
+            //Return 500 in case of internal server error
+            //or redirects to logout page with 401 in case of
+            //invalid token
+            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+            if(err === 2) return res.redirect(401, mainHost + "/logout");
+        }
+        //Checks if user is an admin
+        if(preCheckToken) authControllers.checkScopes(preCheckToken.scopes, ["role:candidate"], (hasScope) => {
+            //Returns 403  in case is not
+            if(hasScope) return res.status(403).json({msg: "You must have administrator access to block users!", code: "403"});
+            else tokenControllers.checkToken(req.session.token, true, (err, tokenPayload) => {
                 if(err) {
-                    //Return 500 in case of internal server error 
-                    //or 401 and redirects to logout page in case of inexistent user
-                    //or 403 in case of wrong password 
+                    //Return 500 in case of internal server error
+                    //or redirects to logout page with 401 in case of
+                    //invalid token
                     if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
-                    if(err === 2 || err === 3) return res.status(401).redirect(mainHost + "/logout")
-                    if(err === 4) return res.status(403).json({msg: "Old password is incorrect!", code: "403"});
+                    if(err === 2) return res.redirect(401, mainHost + "/logout");
                 }
-                //In case password is correct modify users information 
-                if(valid) {
-                    //Reset brute as user passed through all verifications
-                    req.brute.reset();
-                    //Call function to modify user information
-                    usersControllers.modifyUserPassword(tokenPayload.userId, req.body.newPassword, (err, success) => {
+                //Define array with allowed scopes to validate
+                var authorizedScopes = ["role:master", "candidates:block"];
+                //Checks if user has necessary admin scopes to block 
+                //users
+                if(tokenPayload) authControllers.checkScopes(tokenPayload.scopes, authorizedScopes, (hasAdminScopes) => {
+                    if(!hasAdminScopes) return res.status(403).json({msg: "You must have higher role to block users!", code: "403"});
+                    if(hasAdminScopes) authControllers.checkAdminPassword(tokenPayload.userId, req.body.passwordCheck, (err, validPassword) => {
                         if(err) {
-                            //Return 500 in case of internal server error
-                            //or 401 in case user isn't found
+                            //Return 500 in case of internal server error 
+                            //or 401 and redirects to logout page in case of inexistent user
+                            //or 403 in case of wrong password 
                             if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
-                            if(err === 2) return res.status(401).json({msg: "User not found!", code: "401"});
+                            if(err === 2 || err === 3) return res.status(401).redirect(mainHost + "/logout")
+                            if(err === 4) return res.status(403).json({msg: "Verification password is incorrect!", code: "403"});
                         }
-                        //If success returns 200 and redirects to logout page
-                        if(success) return res.status(200).redirect(mainHost + "/logout?changedInfo=true");
+                        if(validPassword) usersControllers.getUserInfo(req.body.userId, (err, userInfo) => {
+                            if(err) {
+                                if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                if(err === 2) return res.status(404).json({msg: "User can't be found!", code: "404"});
+                            }
+                            //Checks if user being modified is has master role
+                            if(userInfo) authControllers.checkScopes(userInfo.scopes, ["role:master"], (isMaster) => {
+                                if(isMaster) return res.status(403).json({mag: "It is not possible to modify block status of master admins!", code: "403"});
+                                if(!isMaster) {
+                                    //Reset brute as user passed through all verifications
+                                    req.brute.reset();
+                                    //Finally block or unblock user depending on value set in request
+                                    usersControllers.blockOrUnblockUser(req.body.userId, req.body.blockedValue, (err, success, modifiedValue) => {
+                                        if(err) {
+                                            //Returns 500 in case of internal sever error
+                                            //or 404 in case user is not found
+                                            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                            if(err === 2) return res.status(404).json({msg: "Admin not found!", code: "404"});
+                                        }
+                                        //Returns value modified and 200 in case of success
+                                        if(success) return res.status(200).json({msg: "User has been " + modifiedValue + "!", code: "200"});
+                                    });
+                                }
+                            });
+                        });
                     });
-                }
+                });
             });
-        }); 
+        });
+    });
 });
 
 module.exports = router;

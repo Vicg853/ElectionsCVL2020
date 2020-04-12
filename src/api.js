@@ -1,3 +1,4 @@
+//Getting necessary modules
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -8,13 +9,16 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoStore = require("connect-mongo")(session);
 
+//Defining api main const (literally what runs all the server)
 const api = express();
 
+//Making api use some features
 api.use(cors());
 api.use(helmet());
 api.use(morgan());
 api.use(bodyParser.json());
 
+//Starting connection with mongoose
 mongoose.connect(
     process.env.MONGO_URL, { 
     useUnifiedTopology: true,
@@ -23,6 +27,8 @@ mongoose.connect(
     useCreateIndex: true
 });
 
+//Defining necessary things to use session and 
+//connecting it to mongodb
 api.use(session({
     name: 'electionsLfpSession',
     resave: false,
@@ -39,10 +45,12 @@ api.use(session({
     }
 }));
 
+//Importing routes
 api.use(require("./routes/main"));
 api.use(require("./routes/common"));
 api.use(require("./routes/candidate"));
 
+//Making api listen
 api.listen(process.env.API_LISTEN_PORT, process.env.API_HOST_NAME, () => {
     console.log("Running on: http://" + process.env.API_HOST_NAME + ":" + process.env.API_LISTEN_PORT);
 });

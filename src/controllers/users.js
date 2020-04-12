@@ -2,38 +2,41 @@ const bcrypt = require("bcrypt");
 const {UserModel, CandidateModel} = require("../models/users");
 
 function createAdmin(
-    username, 
-    password, 
-    passwordConfirm,
-    fullName, 
-    role, 
-    mailAddress,
+    infoArray,
     callback) {
-    var newRoleArray = [];
-    if(Array.isArray(role)) newRoleArray = role;
-    else newRoleArray.push(role);
-    if(password !== passwordConfirm) return callback(1);
-    UserModel.find({
-        username: username, 
-    },(err, res) => {
+    //Check if password and password confirm are the same
+    //returns error in case it is
+    if(infoArray.password !== infoArray.newUserPasswordConfirm) return callback(1);
+    //Set confirm password to undefined so it isn't save in db
+    else infoArray.newUserPasswordConfirm = undefined;
+    //Checks if scopes is an array
+    //and if not transforms it in an array
+    if(!Array.isArray(infoArray.scopes)) infoArray.scopes = [infoArray.scopes];
+    //Search in db if this username is already in use
+    UserModel.findOne({
+        username: infoArray.username
+    }, (err, found) => {
+        //Returns error in case of error
         if(err) return callback(2);
-        if(res.length > 0) return callback(3);
-        bcrypt.hash(password, 13, (err, hash) => {
+        //Returns already exists 
+        if(found) return callback(3);
+        //Encrypts then the password before saving user info
+        if(!found) bcrypt.hash(infoArray.password, 13, (err, hash) => {
+            //Returns error in case of an error
             if(err) return callback(2);
             if(!hash) return callback(2);
-            UserModel.create({
-                username: username,
-                password: hash,
-                fullName: fullName,
-                scopes: newRoleArray,
-                mailAddress: mailAddress,
-                userMetadata: [],
-                blocked: 0,
-            }, (err, res1) => {
-                if(err) return callback(2);
-                if(!res1) return callback(2);
-                return callback(false, res1.fullName);
-            });
+            //Proceeds
+            if(hash) {
+                //Sets password to hashed password
+                infoArray.password = hash;
+                //Adds user to db with data
+                UserModel.create(infoArray, (err, created) => {
+                    //Returns error in case of error
+                    if(err) return callback(2);
+                    if(!created) return callback(2);
+                    if(created) return callback(false, created.fullName);
+                });
+            }
         });
     });
     //callback(1) --> passwords confirmation must be equal
@@ -102,10 +105,35 @@ function deleteUser(userId, callback) {
     //callback(true) --> 500
 }
 
+function blockOrUnblockUser(userId, value, callback) {
+    //Checks if user really exists
+    UserModel.findById(userId, (err, found) => {
+        //Returns 500 in case of internal server error
+        if(err) return callback(1);
+        //Returns 404 user not found
+        if(!found) return callback(2);
+        //In case that usr is found modify the blocked status
+        //to chosen value by user
+        if(found) UserModel.findByIdAndUpdate(userId, {
+            $set: { blocked: value }
+        }, (err, modified) => {
+            //Returns 500 in case of internal server error
+            if(err) return callback(1);
+            if(!modified) return callback(1);
+            //Returns new blocked value and err === false
+            if(modified && !value) return callback(false, true, "unblocked");
+            if(modified && value) return callback(false, true, "blocked");
+        });
+    });
+    //callback(1) --> 500
+    //callback(2) --> user not found
+}
+
 module.exports = {
     createAdmin,
     getUserInfo,
     changeUserInfo,
     deleteUser,
-    modifyUserPassword
+    modifyUserPassword,
+    blockOrUnblockUser
 };

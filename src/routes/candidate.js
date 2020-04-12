@@ -1,16 +1,20 @@
+//Defining root variable that make routes work
 const candidatesRouter = require("express").Router();
 
+//Importing bruteforce functions
 const {
     globalBruteforce,
     userBruteforce
 } = require("../security/bruteforce");
 
+//Necessary controllers to make things work
 const authControllers = require("../controllers/candidates/auth");
 const tokenControllers = require("../controllers/token");
 const usersControllers = require("../controllers/candidates/candidates");
 const utilsControllers = require("../controllers/utils");
 const commonAuthControllers = require("../controllers/auth");
 
+//Defining important variables
 const mainHost = "http://localhost:8000"
 const rootRoute = "/api/auth/candidate";
 const adminPageRoute = "/";
@@ -354,6 +358,78 @@ candidatesRouter.put(rootRoute + "/edit/password",
     }); 
 });
 
-candidatesRouter.post(rootRoute + "/block")
+candidatesRouter.post(rootRoute + "/block",
+    globalBruteforce.prevent, 
+    userBruteforce.getMiddleware({ 
+        //Bruteforce middleware to prevent user from bruteforcing
+        //the password used to verify users authenticity to
+        //modify data. 
+        key: (req, res, next) => {
+            next(req.session.token);
+        }
+    }), (req, res) => {
+    //Check if user input is correct else return 422
+    if(!req.body.userId ||
+       !req.body.passwordCheck ||
+       req.body.blockedValue === null) return res.status(422).json({msg: "Invalid input!", code: "422"});
+    //Check if token exists else redirect to login page
+    if(!req.session.token) return res.redirect(401, mainHost + "/login");
+    //Check if token is low valid and get scopes
+    tokenControllers.checkToken(req.session.token, false, (err, preCheckToken) => {
+        if(err) {
+            //Return 500 in case of internal server error
+            //or redirects to logout page with 401 in case of
+            //invalid token
+            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+            if(err === 2) return res.redirect(401, mainHost + "/logout");
+        }
+        //Checks if user is an admin
+        if(preCheckToken) commonAuthControllers.checkScopes(preCheckToken.scopes, ["role:candidate"], (hasScope) => {
+            //Returns 403  in case is not
+            if(hasScope) return res.status(403).json({msg: "You must have administrator access to block users!", code: "403"});
+            else tokenControllers.checkToken(req.session.token, true, (err, tokenPayload) => {
+                if(err) {
+                    //Return 500 in case of internal server error
+                    //or redirects to logout page with 401 in case of
+                    //invalid token
+                    if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                    if(err === 2) return res.redirect(401, mainHost + "/logout");
+                }
+                //Define array with allowed scopes to validate
+                var authorizedScopes = ["role:master", "candidates:block"];
+                //Checks if user has necessary admin scopes to block 
+                //users
+                if(tokenPayload) commonAuthControllers.checkScopes(tokenPayload.scopes, authorizedScopes, (hasAdminScopes) => {
+                    if(!hasAdminScopes) return res.status(403).json({msg: "You must have higher role to block users!", code: "403"});
+                    if(hasAdminScopes) commonAuthControllers.checkAdminPassword(tokenPayload.userId, req.body.passwordCheck, (err, validPassword) => {
+                        if(err) {
+                            //Return 500 in case of internal server error 
+                            //or 401 and redirects to logout page in case of inexistent user
+                            //or 403 in case of wrong password 
+                            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                            if(err === 2 || err === 3) return res.status(401).redirect(mainHost + "/logout")
+                            if(err === 4) return res.status(403).json({msg: "Verification password is incorrect!", code: "403"});
+                        }
+                        if(validPassword) {
+                            //Reset brute as user passed through all verifications
+                            req.brute.reset();
+                            //Finally block or unblock user depending on value set in request
+                            usersControllers.blockOrUnblockCandidate(req.body.userId, req.body.blockedValue, (err, success, modifiedValue) => {
+                                if(err) {
+                                    //Return 500 in case of internal server error
+                                    //or 404 in case user is not found
+                                    if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                    if(err === 2) return res.status(404).json({msg: "Candidate not found!", code: "404"});
+                                }
+                                //Returns value modified and 200 in case of success
+                                if(success) return res.status(200).json({msg: "User has been " + modifiedValue + "!", code: "200"});
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    });
+});
 
 module.exports = candidatesRouter;
