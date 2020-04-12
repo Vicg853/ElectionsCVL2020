@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const failCallback = function (req, res, nextValidRequestDate) {
     return res.status(403).json({
        code: "403",
-       msg: "You tried to many times with the same credentials try again in " +moment(nextValidRequestDate).fromNow()
+       msg: "You tried to many times with the same credentials try again in " + moment(nextValidRequestDate).fromNow()
     });
 }
     //Brute force store 
@@ -18,14 +18,14 @@ const model = mongoose.model(
 const store = new MongooseStore(model);
       
 const userBruteforce = new ExpressBrute(store, {
-    freeRetries: 5,
-    minWait: 5*60*1000, // 5 minutes
+    freeRetries: 11,
+    minWait: 2*60*1000, // 2 minutes
     maxWait: 60*60*1000, // 1 hour,
     failCallback: failCallback
 });
     // No more than 400 login attempts per day per IP
 const globalBruteforce = new ExpressBrute(store, {
-    freeRetries: 400,
+    freeRetries: 500,
     attachResetToRequest: false,
     refreshTimeoutOnRequest: false,
     minWait: 25*60*60*1000, // 1 day 1 hour (should never reach this wait time)
