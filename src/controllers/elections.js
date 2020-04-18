@@ -117,9 +117,41 @@ function modifyElectionInfo(electionId ,infoToModify, callback) {
     }
 }
 
+function deleteElection(electionId, callback) {
+    electionsModel.findByIdAndDelete(electionId, (err, success) => {
+        if(err || !success) return callback(true);
+        if(success) return callback(false, true);
+    });
+}
+
+function checkElectionStatus(electionId, callback) {
+    //Call mongo db model to get info and then check date
+    electionsModel.findById(electionId, (err, result) => {
+        //In case of error
+        if(err) return callback(1);
+        //In case election is not found
+        if(!result) return callback(2);
+        //Getting dates in a format JS will understand
+        var startDate = result.startDate;
+        var endDate = result.endDate;
+        var today = new Date()/10000;
+        
+        //Not started yet
+        if(today < startDate) return callback(false, 1, result.active);
+
+        //Occurring
+        if(startDate < today < endDate) return callback(false, 2, result.active);
+
+        //Ended
+        if(endDate < today) return callback(false, 3, result.active);
+    });
+}
+
 module.exports = {
     checkIfElectionExists,
     createElection,
     getElectionInfo,
-    modifyElectionInfo
+    modifyElectionInfo,
+    deleteElection,
+    checkElectionStatus
 };

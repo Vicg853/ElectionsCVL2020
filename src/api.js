@@ -42,13 +42,14 @@ api.use(session({
         maxAge: 1000*60*60*4,
         sameSite: false,
         secure: false,
+        httpOnly: true
     }
 }));
 
 //Importing routes
 api.use(require("./routes/electionEdit"));
 api.use(require("./routes/electionInfo"));
-api.use(require("./routes/electionWCandidates"));
+api.use(require("./routes/election_a_candidates"));
 
 //Making api listen
 api.listen(process.env.API_LISTEN_PORT, process.env.API_HOST_NAME, () => {

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const ElectionSchema = new mongoose.Schema({
+const candidateInElectionSchema = new mongoose.Schema({
     candidateId: {
         type: String,
         required: true
@@ -15,18 +15,16 @@ const ElectionSchema = new mongoose.Schema({
     },
     Participating: {
         type: Boolean,
-        required: true
-    },
-    Blocked: {
-        type: Boolean,
-        required: true
+        required: false,
+        default: false
     },
     NumberOfVotes: {
         type: Number,
-        required: true
+        required: false,
+        default: 0
     },
 }); 
 
-const ElectionsModel = mongoose.model("Election", ElectionSchema);
+const candidateInElectionModel = mongoose.model("candidateInElection", candidateInElectionSchema);
 
-module.exports = ElectionsModel;
+module.exports = candidateInElectionModel;
