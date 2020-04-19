@@ -71,8 +71,8 @@ routerElectionEdit.post(rootRoute + "/create", (req, res) => {
                 //if not returns 422
                 if(isNaN(convertStartDate) || isNaN(convertEndDate)) return res.status(422).json({msg: "Wrong date format or date is invalid, date format must be MM/DD/YYYY", code: "422"});
                 //Convert date to UnixTimeStamp
-                var UnixDateStartDate = convertStartDate/10000;
-                var UnixDateEndDate = convertEndDate/10000;
+                var UnixDateStartDate = convertStartDate/1000;
+                var UnixDateEndDate = convertEndDate/1000;
 
                 if(UnixDateStartDate >= UnixDateEndDate) return res.status(409).json({msg: "Start date must be before end date!", code: "409"});
 
@@ -169,7 +169,7 @@ routerElectionEdit.put(rootRoute + "/edit", (req, res) => {
             //if not returns 422
             if(isNaN(convertStartDate)) return res.status(422).json({msg: "Wrong date format or invalid date, date format must be MM/DD/YYYY", code: "422"});
             //Convert date to UnixTimeStamp
-            var UnixDateStartDate = convertStartDate/10000;
+            var UnixDateStartDate = convertStartDate/1000;
         } else var UnixDateStartDate = null;
         if(req.body.infoArray.endDate !== null && req.body.infoArray.endDate !== undefined 
             && req.body.infoArray.endDate !== ""){
@@ -179,7 +179,7 @@ routerElectionEdit.put(rootRoute + "/edit", (req, res) => {
             //if not returns 422
             if(isNaN(convertEndDate)) return res.status(422).json({msg: "Wrong date format or invalid date, date format must be MM/DD/YYYY!", code: "422"});
             //Convert date to UnixTimeStamp
-            var UnixDateEndDate = convertEndDate/10000;
+            var UnixDateEndDate = convertEndDate/1000;
         } else var UnixDateEndDate = null;
 
         if(req.body.infoArray.startDate !== null && req.body.infoArray.startDate !== undefined

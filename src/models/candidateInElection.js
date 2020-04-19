@@ -13,6 +13,10 @@ const candidateInElectionSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    electionName: {
+        type: String,
+        required: true
+    },
     Participating: {
         type: Boolean,
         required: false,

@@ -135,16 +135,18 @@ routerElection_a_Candidates.post(rootRoute + "/participate/request", (req, res) 
         election_a_candidatesControllers.createRequest(req.body.electionId, tokenPayload.userId, (err, success) => {
             if(err) {
                 //Return 500 in case of internal server error
-                //or 404 for an not found election
+                //or 404 for an not found election or candidate
                 if(err === 1) return res.status(500).json({msg: "Internal sever error!", code: "500"});
-                if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
+                if(err === 2) return res.status(404).json({msg: "Candidate not found!", code: "404"});
+                if(err === 3) return res.status(404).json({msg: "Election not found!", code: "404"});
             }
+            //In case of success
             if(success) return res.status(200).json({msg: "Success while requesting to participate!", code: "200"});
         });
     }
 });
 
-//Request to participate to election (for candidates only)
+//Cancel to election (for candidates only)
 routerElection_a_Candidates.delete(rootRoute + "/participate/request", (req, res) => {
     //Checks for empty or missing input
     if(!req.body.electionId) return res.status(422).json({msg: "Invalid input!", code: "422"});
@@ -177,6 +179,8 @@ routerElection_a_Candidates.delete(rootRoute + "/participate/request", (req, res
                         if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
                         if(err === 2) return res.status(404).json({msg: "Request not found!", code: "404"});
                     }
+                    //Checks if user canceling request is the 
+                    //request's owner
                     if(result && result.candidateId === tokenPayload.userId) return proceed(tokenPayload);
                     if(result && result.candidateId !== tokenPayload.userId) return res.status(403).json({msg: "You are not the owner of this request!", code: "403"});
                 });
@@ -184,7 +188,7 @@ routerElection_a_Candidates.delete(rootRoute + "/participate/request", (req, res
         });
     });
 
-    //Proceed requesting
+    //Proceed deleting request
     function proceed(tokenPayload){
         election_a_candidatesControllers.deleteRequest(req.body.electionId, tokenPayload.userId, (err, success) => {
             //In case of error return 500
@@ -197,7 +201,33 @@ routerElection_a_Candidates.delete(rootRoute + "/participate/request", (req, res
 
 //Get elections participating
 routerElection_a_Candidates.get(rootRoute + "/participate/isParticipating", (req, res) => {
-
+    //Check if there is a session 
+    if(!req.session.token) return res.redirect(401, mainHost + loginRoute);
+    //Check if client is a candidate or administrator
+    tokenControllers.checkIfIsCandidate(req.session.token, (err, isCandidate) => {
+        //Return 500 in case of internal server error
+        if(err) return res.status(500).json({msg: "Internal sever error!", code: "500"});
+        //If is not a candidate returns 403, as this can only be done by candidates
+        if(!isCandidate) return res.status(403).json({msg: "You must be a candidate to do this action!", code: "403"});
+        //If is then check token validity
+        if(isCandidate) tokenControllers.checkCandidateToken(req.session.token, true, (err, tokenPayload) => {
+            if(err) {
+                //Return 500 in case of internal server error
+                //or redirects to logout page in case of invalid token
+                if(err === 1) return res.status(500).json({msg: "Internal sever error!", code: "500"});
+                if(err === 2) return res.redirect(401, mainHost + logoutRoute);
+            }
+            if(tokenPayload) election_a_candidatesControllers.getElectionsParticipating(tokenPayload.userId, (err, getSuccess) => {
+                if(err) { 
+                    //Return 500 in case of error
+                    //or 404 when there are any requests
+                    if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                    if(err === 2) return res.status(200).json({msg: "You haven't requested to participate at any elections yet!", code: "200", results: {}});
+                }
+                if(getSuccess) return res.status(200).json({msg: "Success retrieving elections participating!", code: "200", results: getSuccess});
+            });
+        });
+    });
 });
 
 
