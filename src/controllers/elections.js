@@ -1,5 +1,6 @@
-const electionsModel = require("../models/elections");
 const bcrypt = require("bcrypt");
+const electionsModel = require("../models/elections");
+const candidate_a_elections = require("../models/candidateInElection");
 
 function checkIfElectionExists(infoToCheck, callback) {
     electionsModel.findOne(infoToCheck, (err, queryRes) => {
@@ -69,7 +70,7 @@ function getElectionInfo(electionId, callback) {
     //Var that will be sent to check if need to input password
     var password = true;
     //Mongo DB model that gets election info
-    electionsModel.findById(electionId, (err, success) => {
+    electionsModel.findOne({_id: electionId}, (err, success) => {
         //Return error in case of error
         if(err) return callback(1);
         //Return not found 
@@ -85,7 +86,8 @@ function getElectionInfo(electionId, callback) {
             illustrationUrl: success.illustrationUrl,
             numberOfCandidateToVote: success.numberOfCandidateToVote,
             illustrationUrl: success.illustrationUrl,
-            NeedsPassword: password
+            NeedsPassword: password,
+            active: success.active
         });
     });
 }
@@ -122,8 +124,18 @@ function modifyElectionInfo(electionId ,infoToModify, callback) {
     function proceed(infoToModifyInFunction){
         //Calls mongo db model to modify info
         electionsModel.findByIdAndUpdate(electionId, infoToModifyInFunction, (err, success) => {
+            //In case of error
             if(err) return callback(true);
+            //In case of error
             if(!success) return callback(true);
+            if(success) electionsModel.findOne({
+                _id: electionId
+            }, (err, result) => {
+                //In case of error
+            if(err) return callback(true);
+            //In case of error
+            if(!success) return callback(true);
+            });
             if(success) return callback(false, {
                 name: success.name,
                 startDate: success.startDate,
@@ -158,7 +170,7 @@ function checkElectionStatus(electionId, callback) {
         if(today < startDate) return callback(false, 1, result.active);
 
         //Occurring
-        if(startDate < today < endDate) return callback(false, 2, result.active);
+        if(startDate <= today && today <= endDate) return callback(false, 2, result.active);
 
         //Ended
         if(endDate < today) return callback(false, 3, result.active);
@@ -244,7 +256,7 @@ function getElectionInfoExtended(authorId, electionId, callback) {
 
 function getElections(callback){
     //Get elections 
-    electionsModel.find((err, result) => {
+    electionsModel.find({active: true}, (err, result) => {
         //Return error
         if(err) return callback(1);
         //Check if there are elections, if not return empty
@@ -269,6 +281,169 @@ function getElections(callback){
     });
 }
 
+function electionResults(electionId, callback) {
+    //Call mongo db model to get
+    electionsModel.findOne({
+        _id: electionId,
+        active: true,
+    }, (err, result) => {
+        //In case of error
+        if(err) return callback(1);
+        //If no election is found
+        if(!result) return callback(2);
+        //In case there is an election, check it's end date
+        if(result) {
+            //Getting dates
+            var startDate = result.startDate;
+            var endDate = result.endDate;
+            var today = new Date()/1000;
+            //In case hasn't started or is ongoing yet
+            if(today < startDate) return callback(3);
+            if(startDate <= today && today <= endDate) return callback(3);
+            //In case ended, proceed
+            var infoArray = {
+                name: result.name,
+                authorName: result.authorName,
+                startDate: result.startDate,
+                endDate: result.endDate,
+                illustrationUrl: result.illustrationUrl,
+                numberOfCandidateToVote: result.numberOfCandidateToVote,
+                numberOfTotalVotes: result.numberOfTotalVotes,
+                candidatesResults: []
+            };
+            if(endDate < today) candidate_a_elections.find({
+                electionParticipatingId: electionId,
+                Participating: true,
+            }, (err, result2) => {
+                //In case of error
+                if(err) return callback(1);
+                //If no candidates are found
+                if(!result2 || result2.length === 0) return callback(4);
+                //Proceed creating object with candidates and votes
+                //Candidates map
+                var candidatesResultsMap = [];
+                //Mapping candidates info
+                result2.forEach(content => {
+                    var infoArray = {
+                        candidateId: content.candidateId,
+                        candidateName: content.candidateName,
+                        NumberOfVotes: content.NumberOfVotes
+                    };
+                    candidatesResultsMap.push(infoArray);
+                });
+                infoArray.candidatesResults = candidatesResultsMap;
+                if(result2) return callback(false, infoArray);
+            });
+        }
+    });
+}
+
+function voteInElection(electionId, candidatesVotedArray, voterUsername, callback){
+    candidate_a_elections.find({
+        electionParticipatingId: electionId,
+        Participating: true,
+    }, (err, candidatesArray) => {
+        //In case of error
+        if(err) return callback(1);
+        //If no candidates are found
+        if(!candidatesArray || candidatesArray.length === 0) return callback(2);
+        //In case all goes as expected check if candidates 
+        //voted exists
+        if(candidatesArray) {
+            //Check if all candidates are valid
+            var candidatesIdArray = [];
+            candidatesArray.forEach(content => {
+                candidatesIdArray.push(content.candidateId);
+            });
+
+            //Check if candidates to vote var is really an array
+            var candidatesVotedArrayToCheck = [];
+            if(Array.isArray(candidatesVotedArray)) 
+                candidatesVotedArrayToCheck = candidatesVotedArray;
+            else candidatesVotedArrayToCheck.push(candidatesVotedArray);
+
+            //Run through all candidates and check if they are valid
+            if(!candidatesArray.some(content => {
+                if(candidatesIdArray.indexOf(content) > -1) return true;
+            })) {
+                //Check if there are no repeated candidates being voted
+                var valuesSoFar = Object.create(null);
+                if(!candidatesVotedArrayToCheck.some((content, i) => {
+                    var value = candidatesVotedArray[i];
+                    if(value in valuesSoFar) return true;
+                    valuesSoFar[value] = true;
+                })) proceed();
+                //In case there is a repeated candidate value
+                else return callback(4);    
+            }
+            //In case there is an invalid candidateId to vote
+            else return callback(3);
+        }
+        //Proceed to voting function
+        function proceed(){
+            candidateModel.updateMany({ 
+                candidateId: { $in: candidateArray }, 
+                Participating: true, 
+                electionParticipatingId: electionId 
+            }, 
+            { $inc: { NumberOfVotes: 1 } }, 
+            {multi: true}, (err, voted) => {
+                //In case of error
+                if(err || !voted) return callback(1);
+                //In case all goes right set already voted voter
+                if(voted) electionsModel.findByIdAndUpdate(electionId, {
+                    $push: { voters: voterUsername }
+                }, (err, addedVoter) => {
+                    //In case of error
+                    if(err || !addedVoter) return callback(1);
+                    //Return success finally
+                    if(addedVoter) return callback(false, true);
+                });
+            });
+        }
+    });
+} 
+
+function checkElectionPassword(passwordToCheck, password, callback){
+    bcrypt.compare(password, passwordToCheck, (err, correct) => {
+        //Return error
+        if(err) return callback(1);
+        //In case is not correct
+        if(!correct) return callback(2);
+        //In case password is correct 
+        if(correct) return callback(false, true);
+    });
+}  
+
+function getElectionFullInfo(electionId, callback) { 
+    //Var that will be sent to check if need to input password
+    var password = true;
+    //Mongo DB model that gets election info
+    electionsModel.findOne({_id: electionId}, (err, success) => {
+        //Return error in case of error
+        if(err) return callback(1);
+        //Return not found 
+        if(!success) return callback(2);
+        if(!success.confirmationPassword 
+            || success.confirmationPassword === null) password = false;
+        if(success) return callback(false, {
+            name: success.name,
+            authorName: success.authorName,
+            authorID: success.authorID,
+            startDate: success.startDate,
+            endDate: success.endDate,
+            illustrationUrl: success.illustrationUrl,
+            numberOfCandidateToVote: success.numberOfCandidateToVote,
+            illustrationUrl: success.illustrationUrl,
+            NeedsPassword: password,
+            confirmationPassword: success.confirmationPassword,
+            active: success.active,
+            voters: success.voters,
+            numberOfTotalVotes: success.numberOfTotalVotes
+        });
+    });
+}
+
 module.exports = {
     checkIfElectionExists,
     createElection,
@@ -279,5 +454,9 @@ module.exports = {
     getElectionsExtended,
     checkIfIsElectionCreator,
     getElectionInfoExtended,
-    getElections
+    getElections,
+    electionResults,
+    checkElectionPassword,
+    getElectionFullInfo,
+    voteInElection
 };

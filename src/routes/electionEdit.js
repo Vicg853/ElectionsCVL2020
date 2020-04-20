@@ -181,7 +181,6 @@ routerElectionEdit.put(rootRoute + "/edit", (req, res) => {
             //Convert date to UnixTimeStamp
             var UnixDateEndDate = convertEndDate/1000;
         } else var UnixDateEndDate = null;
-
         if(req.body.infoArray.startDate !== null && req.body.infoArray.startDate !== undefined
             && req.body.infoArray.startDate !== "" && req.body.infoArray.endDate !== null && req.body.infoArray.endDate !== undefined 
             && req.body.infoArray.endDate !== "" ) {
@@ -278,7 +277,91 @@ routerElectionEdit.delete(rootRoute + "/edit", (req, res) => {
 });
 
 routerElectionEdit.put(rootRoute + "/vote", (req, res) => {
-    
+    //Check input
+    if(!req.body.electionId || !req.body.candidatesArray ||
+        !req.body.username || !req.body.password) return res.status(422).json({msg: "Invalid input!", code: "422"});
+    //Check if election exists
+    electionControllers.checkIfElectionExists({_id: req.body.electionId}, (err, exists) => {
+        if(err) {
+            //Return 500 in case of internal server error
+            //or 404 if election is not found
+            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+            if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
+        }
+        //On case exists
+        if(exists) electionControllers.checkElectionStatus(req.body.electionId, (err, operationDate, isActive) => {
+            if(err) {
+                //Return 500 in case of internal server error
+                //or 403 if election has ended or not started or is blocked
+                if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
+            }
+            //If is active and is ongoing get election info to check 
+            //deeper in the inputs
+            if(operationDate === 2 && isActive) electionControllers.getElectionFullInfo(req.body.electionId, (err, electionInfo) => {
+                if(err) {
+                    //Return 500 in case of internal server error
+                    //or 404 if election is not found
+                    if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                    if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
+                }
+                //If has gather info
+                if(electionInfo) {
+                    //Check if has correct number of people to vote
+                    if(electionInfo.numberOfCandidateToVote !== req.body.candidatesArray)
+                        return res.status(422).json({msg: "Invalid number of candidates voted!", code: "422"});
+                    //Check if has correct number of people to vote
+                    if(electionInfo.NeedsPassword){
+                        if(!req.body.passwordElection) return res.status(422).json({msg: "You must insert a password for this election!", code: "422"});
+                        else electionControllers.checkElectionPassword(electionInfo.confirmationPassword, req.body.passwordElection, (err, isCorrect) => {
+                            if(err) {
+                                //Return 500 in case of internal server error
+                                //or 404 in case election is not found
+                                //or 401 in case password is wrong
+                                if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                if(err === 2) return res.status(403).json({msg: "Password is incorrect!", code: "403"});
+                            }
+                            if(isCorrect) proceed();
+                        });
+                    }
+                    else proceed();
+                    //Function to vote and check user credentials
+                    function proceed() {
+                        //Check if user already voted
+                        var voters = {};
+                        if(Array.isArray(electionInfo.voters)) voters = electionInfo.voters;
+                        else voters.push(electionInfo.voters);
+                        if(voters.indexOf(req.body.username) > -1) return res.status(403).json({msg: "You already voted!", code: "403"});
+                        //Check user credentials
+                        usersControllers.voterCredentialsCheck(req.body.username, req.body.password, (err, voterIsCorrect) => {
+                            if(err) {
+                                //Return 500 in case of internal server error
+                                //or 401 in case username or password are wrong
+                                if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                if(err === 2) return res.status(401).json({msg: "Username not found or incorrect password!", code: "401"});
+                            }
+                            if(voterIsCorrect) electionControllers.voteInElection(req.body.electionId, req.body.candidatesArray, req.body.username, (err, success) => {
+                                if(err) {
+                                    //Return 500 in case of internal server error
+                                    //or 422 in case of excessive or insufficient candidates chosen
+                                    //or candidates voted are repeated
+                                    //or 409 if one of the candidates are invalid or blocked
+                                    if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+                                    if(err === 2) return res.status(422).json({msg: "Excessive or insufficient number of candidates chosen!", code: "422"});
+                                    if(err === 3) return res.status(409).json({msg: "One of the candidates chosen are invalid!", code: "409"});
+                                    if(err === 4) return res.status(422).json({msg: "You can only vote one time in a candidate!", code: "422"});
+                                }
+                                //Finally if all goes as expected success message 
+                                //while checking in votes
+                                if(success) return res.status(200).json({msg: "Your vote has been checked in successfully!", code: "2000"});
+                            });
+                        });
+                    }
+                } 
+            });
+            else return res.status(403).json({msg: "Election already ended or is blocked! You can not vote in this election!", code: "403"});
+        });
+    });
 });
 
 module.exports = routerElectionEdit;

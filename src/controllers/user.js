@@ -1,4 +1,5 @@
 const {UserModel} = require("../models/users");
+const electionModel = require("../models/elections");
 
 function getAdminInfo(userId, callback){
     //Calls mongo db model and searches user by id
@@ -14,6 +15,15 @@ function getAdminInfo(userId, callback){
     });
 }
 
+function voterCredentialsCheck(username, password, callback) {
+    //return callback(1); internal server error
+    //return callback(2); already voted
+    //return callback(3); wrong password or username not found
+    electionModel.find
+    return callback(false, true);
+}
+
 module.exports = {
     getAdminInfo,
+    voterCredentialsCheck
 }

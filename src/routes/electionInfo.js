@@ -145,34 +145,45 @@ routeElectionInfo.get(rootRoute + "/get", (req, res) => electionControllers.getE
 }));
 
 //Get non detailed info (for normal users)
-routeElectionInfo.get(rootRoute + "/info/:electionId",(req, res) => electionControllers.getElectionInfo(req.params.electionId, (err, result) => {
-    if(err) {
-        //Return 500 in case of internal server error
-        //or 404 for election not found
-        if(err === 1) return res.status(500).json({msg: "Internal sever error!", code: "500"});
-        if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
-    }
-    if(result) electionControllers.checkElectionStatus(req.params.electionId, (err, dateStatus, status) => {
+routeElectionInfo.get(rootRoute + "/info/:electionId",(req, res) => {
+    //Check for input
+    if(!req.params.electionId) return res.status(422).json({msg: "Invalid input!", code: "422"});
+    //Controller to get election info
+    electionControllers.getElectionInfo(req.params.electionId, (err, result) => {
         if(err) {
             //Return 500 in case of internal server error
             //or 404 for election not found
             if(err === 1) return res.status(500).json({msg: "Internal sever error!", code: "500"});
             if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
         }
-        if(dateStatus === 2 && status) return res.status(200).json({msg: "Success retrieving election info!", code: "200", results: result});
-        else res.status(403).json({msg: "Your not allowed to get this election info!", code: "403"});
+        if(result && !result.active) return res.status(403).json({msg: "Election can't be accessed!", code: "403"});
+        if(result) electionControllers.checkElectionStatus(req.params.electionId, (err, dateStatus, status) => {
+            if(err) {
+                //Return 500 in case of internal server error
+                //or 404 for election not found
+                if(err === 1) return res.status(500).json({msg: "Internal sever error!", code: "500"});
+                if(err === 2) return res.status(404).json({msg: "Election not found!", code: "404"});
+            }
+            if(dateStatus === 2 && status) return res.status(200).json({msg: "Success retrieving election info!", code: "200", results: result});
+            else res.status(403).json({msg: "Your not allowed to get this election info!", code: "403"});
+        });
     });
-}));
+});
 
 //Get results
-routeElectionInfo.get(rootRoute + "/results",(req, res) => {
-
+routeElectionInfo.get(rootRoute + "/results/:electionId",(req, res) => {
+    //Check for input
+    if(!req.params.electionId) return res.status(422).json({msg: "Invalid input!", code: "422"});
+    //Controller that gets election results
+    electionControllers.electionResults(req.params.electionId, (err, success) => {
+        if(err) {
+            if(err === 1) return res.status(500).json({msg: "Internal server error!", code: "500"});
+            if(err === 2) return res.status(404).json({msg: "Election not found sorry", code: "404"});
+            if(err === 3) return res.status(403).json({msg: "You can't see this election result yet", code: "403"});
+            if(err === 4) return res.status(404).json({msg: "No candidates in this election!", code: "404"});
+        }
+        if(success) return res.status(200).json({msg: "Success retrieving this election results!", code: "200", results: success});
+    });
 });
-
-//Get elections candidates can participate
-routeElectionInfo.get(rootRoute + "/participate/getElections", (req, res) => {
-    
-});
-
 
 module.exports = routeElectionInfo;
