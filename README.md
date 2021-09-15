@@ -28,13 +28,12 @@ npm install
 ```
 _For development run..._
 ```bash
-npm install
-npm run dev
+gatsby develop
 ```
 _...Or for production run_
 ```bash
-npm install
-npm run start
+gatsby build
+gatsby serve
 ```
 ##### Now you should be able to access the project on your brwoser...
 ...Just access [Localhost 8000](http://localhost:8000/) if in dev mode or [Localhost 9000](http://localhost:9000/) in prod mode.
